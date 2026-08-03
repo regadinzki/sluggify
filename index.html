@@ -278,18 +278,27 @@
   .about-copy h2{font-family:'Geist Mono',monospace;font-size:16px;margin:0 0 12px;}
   .about-copy h3{font-family:'Geist Mono',monospace;font-size:13px;margin:22px 0 8px;color:var(--text);}
   .about-copy p{font-size:13px;line-height:1.7;color:var(--text-dim);margin:0 0 10px;}
+  .about-copy code{font-family:'Geist Mono',monospace;background:var(--bg-soft);border:1px solid var(--card-border);border-radius:4px;padding:1px 5px;font-size:12px;color:var(--text);}
+  .about-copy a{color:var(--accent);}
 
   footer{margin-top:30px;text-align:center;color:#565C66;font-size:11px;font-family:'Geist Mono',monospace;}
   footer a{color:#565C66;text-decoration:underline;}
   footer a:hover{color:var(--text-dim);}
+  .footer-copy-btn{
+    background:none;border:none;color:#565C66;text-decoration:underline;
+    font-family:inherit;font-size:11px;padding:0;
+  }
+  .footer-copy-btn:hover{color:var(--text-dim);}
+  .footer-copy-btn.copied{color:var(--green);text-decoration:none;}
 
   .apikey-bar{
-    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
     background:var(--bg-soft);border:1px solid var(--card-border);
     border-radius:10px;padding:12px 16px;margin-bottom:24px;
   }
   .apikey-bar.set{border-color:rgba(111,207,151,.35);}
   .apikey-bar .label{font-size:12px;color:var(--text-dim);white-space:nowrap;}
+  .apikey-hint{font-size:12px;color:var(--text-dim);margin-bottom:10px;line-height:1.5;}
+  .apikey-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
   .apikey-bar input[type=password], .apikey-bar input[type=text]{
     flex:1;min-width:180px;font-family:'Geist Mono',monospace;font-size:12px;
   }
@@ -298,8 +307,14 @@
     padding:8px 14px;border-radius:7px;flex-shrink:0;
   }
   .apikey-bar .status-txt{font-size:11px;color:var(--green);white-space:nowrap;}
+  .apikey-bar .status-txt.err{color:var(--red);}
   .apikey-bar a{color:var(--accent);text-decoration:none;}
   .apikey-bar a:hover{text-decoration:underline;}
+  .provider-switch-link{
+    background:none;border:none;color:var(--text-dim);font-size:11.5px;
+    text-decoration:underline;text-underline-offset:2px;padding:0;flex-shrink:0;
+  }
+  .provider-switch-link:hover{color:var(--text);}
 
   .modal-overlay{
     position:fixed;inset:0;background:rgba(10,9,8,.65);
@@ -352,7 +367,7 @@
   <header>
     <div class="brand">
       <h1>Sluggify</h1>
-      <p>Resize your images, generate SEO-friendly filenames, and write alt text automatically. Upload a photo, paste an image description or a link, then download.</p>
+      <p>Resize your images instantly — no signup needed. Add a free AI key if you also want SEO-friendly filenames and alt text written for you.</p>
     </div>
   </header>
 
@@ -391,21 +406,27 @@
   </div>
 
   <div class="apikey-bar" id="apikeyBar">
-    <div class="toggle" id="providerToggle">
-      <button class="${''}" id="providerBtnGroq" onclick="setProvider('groq')">Groq (Free)</button>
-      <button id="providerBtnAnthropic" onclick="setProvider('anthropic')">Anthropic (Paid)</button>
+    <div class="apikey-hint" id="apikeyHint">This uses a free AI service to write SEO filenames &amp; alt text — setup takes about 30 seconds, no credit card needed.</div>
+    <div class="apikey-row">
+      <div class="toggle" id="providerToggle" style="display:none;">
+        <button id="providerBtnGroq" onclick="setProvider('groq')">Groq</button>
+        <button id="providerBtnAnthropic" onclick="setProvider('anthropic')">Anthropic</button>
+      </div>
+      <button class="provider-switch-link" id="providerSwitchLink" onclick="toggleProviderChoice()">Using a different AI provider?</button>
+      <span class="label" id="apikeyLabel">🔑 Groq API Key</span>
+      <input type="password" id="apikeyInput" aria-labelledby="apikeyLabel" placeholder="gsk_...">
+      <button class="save-btn" onclick="saveApiKey()">Save</button>
+      <button class="btn-ghost" id="testKeyBtn" onclick="testApiKey()">Test</button>
+      <button class="btn-ghost" id="forgetKeyBtn" onclick="forgetApiKey()" style="display:none;">Forget</button>
+      <span class="status-txt" id="apikeyStatus"></span>
+      <span class="label" id="apikeyLink">· Don't have one? <a href="https://console.groq.com/keys" target="_blank">Create one free</a></span>
     </div>
-    <span class="label" id="apikeyLabel">🔑 Groq API Key</span>
-    <input type="password" id="apikeyInput" aria-labelledby="apikeyLabel" placeholder="gsk_...">
-    <button class="save-btn" onclick="saveApiKey()">Save</button>
-    <span class="status-txt" id="apikeyStatus"></span>
-    <span class="label" id="apikeyLink">· Don't have one? <a href="https://console.groq.com/keys" target="_blank">Create one free</a></span>
   </div>
 
   <div class="dropzone" id="dropzone">
     <div class="icon">🎞️</div>
     <div class="title">Drag images here, or click to select files</div>
-    <div class="sub">Multiple files supported · JPG / PNG / WEBP</div>
+    <div class="sub">Multiple files supported · JPG / PNG / WEBP · Resizes instantly, no signup needed</div>
     <input type="file" id="fileInput" multiple accept="image/*">
   </div>
 
@@ -445,9 +466,17 @@
     <p>Descriptive, hyphenated filenames and well-written alt text are both part of Google's official image SEO guidance. Neither one is a major ranking factor by itself. But they're free, they're easy, and most teams skip them simply because doing them by hand doesn't scale. That's the gap Sluggify fills.</p>
     <h3>How it works</h3>
     <p>Resizing, cropping, and AI calls all happen locally in your browser. No images are uploaded to any server we control. You bring your own free Groq API key, or a paid Anthropic key for higher-quality results. There's no subscription and no hidden cost.</p>
+    <h3>About your data and your API key</h3>
+    <p>Sluggify has no backend server. Your images are resized on your own device, and any AI request goes straight from your browser to Groq or Anthropic — Sluggify never receives your images or your API key. You can verify this yourself: open your browser's DevTools, check the Network tab, and you'll see requests only going to <code>api.groq.com</code> or <code>api.anthropic.com</code>, never to sluggify's own domain. The code is open source — <a href="https://github.com/regadinzki/sluggify" target="_blank" rel="noopener">view it on GitHub</a>.</p>
   </section>
 
-  <footer><a href="mailto:regaaljundi@gmail.com">Send feedback</a></footer>
+  <footer>
+    <a href="mailto:regaaljundi@gmail.com">Send feedback</a>
+    <span> · </span>
+    <button class="footer-copy-btn" id="copyEmailBtn" onclick="copyFeedbackEmail()">Copy email instead</button>
+    <span> · </span>
+    <a href="https://github.com/regadinzki/sluggify" target="_blank" rel="noopener">View source on GitHub</a>
+  </footer>
 </div>
 
 <div class="modal-overlay" id="zipModal" role="dialog" aria-modal="true" aria-labelledby="zipModalTitle">
@@ -684,12 +713,58 @@ function refreshApiKeyBar(){
   if (key){
     bar.classList.add('set');
     status.textContent = '✓ Saved';
+    status.classList.remove('err');
     input.value = key;
     input.type = 'password';
+    document.getElementById('forgetKeyBtn').style.display = '';
   } else {
     bar.classList.remove('set');
     status.textContent = '';
+    status.classList.remove('err');
     input.value = '';
+    document.getElementById('forgetKeyBtn').style.display = 'none';
+  }
+
+  // Keep the provider choice visible if Anthropic is already the active
+  // provider (a returning user made that choice on purpose); otherwise keep
+  // it collapsed behind the link so first-time visitors only ever see one
+  // simple, free option by default.
+  if (provider === 'anthropic'){
+    document.getElementById('providerToggle').style.display = 'flex';
+    document.getElementById('providerSwitchLink').style.display = 'none';
+  }
+}
+
+function toggleProviderChoice(){
+  document.getElementById('providerToggle').style.display = 'flex';
+  document.getElementById('providerSwitchLink').style.display = 'none';
+}
+
+function forgetApiKey(){
+  const provider = getActiveProvider();
+  setApiKey(provider, '');
+  refreshApiKeyBar();
+  showToast('Forgot your saved ' + (provider === 'groq' ? 'Groq' : 'Anthropic') + ' key on this device.');
+}
+
+async function testApiKey(){
+  const provider = getActiveProvider();
+  const val = document.getElementById('apikeyInput').value.trim();
+  if (!val){ showToast('Enter an API key first.'); document.getElementById('apikeyInput').focus(); return; }
+  const btn = document.getElementById('testKeyBtn');
+  const status = document.getElementById('apikeyStatus');
+  btn.disabled = true;
+  status.classList.remove('err');
+  status.textContent = 'Testing…';
+  try {
+    await callAI(provider, val, 'Reply with only the word: OK', 'test', () => {});
+    status.textContent = '✓ Key works';
+    status.classList.remove('err');
+  } catch(e){
+    status.textContent = '✕ ' + e.message;
+    status.classList.add('err');
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -1060,6 +1135,17 @@ function updateAltText(id, val){
   const item = items.find(i => i.id === id);
   item.altText = val;
   persistItem(item);
+}
+
+function copyFeedbackEmail(){
+  navigator.clipboard.writeText('regaaljundi@gmail.com').then(() => {
+    const btn = document.getElementById('copyEmailBtn');
+    if (!btn) return;
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+  });
 }
 
 function copyAltText(id){
