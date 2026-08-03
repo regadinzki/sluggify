@@ -162,7 +162,16 @@
   }
 
   .thumb-col{width:190px;flex-shrink:0;background:#0E0F12;display:flex;align-items:center;justify-content:center;position:relative;}
+  .thumb-col[role=button]{cursor:pointer;}
+  .thumb-col[role=button]:focus-visible{outline:2px solid var(--accent-dim);outline-offset:-2px;}
   .thumb-col canvas{width:100%;height:108px;object-fit:cover;display:block;}
+  .crop-hover-hint{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(10,9,8,.55);color:var(--accent);font-size:11px;font-weight:600;
+    opacity:0;transition:opacity .15s ease;text-align:center;padding:8px;
+  }
+  .thumb-col[role=button]:hover .crop-hover-hint,
+  .thumb-col[role=button]:focus-visible .crop-hover-hint{opacity:1;}
   .thumb-col .dim-tag{
     position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);
     color:var(--text-dim);font-family:'Geist Mono',monospace;font-size:9.5px;
@@ -189,13 +198,14 @@
     font-size:10.5px;font-weight:500;padding:4px 9px;border-radius:20px;
   }
 
-  .crop-toggle-btn{
-    background:var(--bg-soft);border:1px solid var(--card-border);color:var(--text-dim);
-    font-size:11px;font-weight:600;padding:6px 11px;border-radius:7px;width:fit-content;
-    transition:all .15s;
-  }
-  .crop-toggle-btn:hover{border-color:var(--accent-dim);color:var(--text);}
   .crop-panel{background:var(--bg-soft);border:1px solid var(--card-border);border-radius:8px;padding:10px;}
+  .crop-done-btn{
+    display:block;width:100%;margin-top:8px;
+    background:var(--green-dim);color:#EAFBF1;font-weight:600;
+    font-size:11.5px;padding:8px 11px;border-radius:7px;
+    transition:filter .15s;
+  }
+  .crop-done-btn:hover{filter:brightness(1.15);}
   .crop-preview-wrap{position:relative;width:100%;cursor:crosshair;border-radius:6px;overflow:hidden;line-height:0;}
   .crop-preview-img{width:100%;display:block;pointer-events:none;user-select:none;}
   .crop-crosshair{
@@ -1789,10 +1799,11 @@ function render(){
     return `
     <div class="card">
       <div class="tag-edge"></div>
-      <div class="thumb-col">
+      <div class="thumb-col"${item.previewDataUrl ? ` onclick="toggleCropPanel('${item.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCropPanel('${item.id}');}" role="button" tabindex="0" aria-expanded="${item.cropOpen ? 'true' : 'false'}" aria-label="${item.cropOpen ? 'Close crop adjuster' : 'Click to adjust crop'}"` : ''}>
         ${item.thumbDataUrl
           ? `<canvas style="width:100%;height:108px;background-image:url('${item.thumbDataUrl}');background-size:cover;background-position:center;"></canvas>`
           : `<span class="empty">processing…</span>`}
+        ${item.previewDataUrl ? `<span class="crop-hover-hint">${item.cropOpen ? '✕ Close' : '🎯 Click to adjust crop'}</span>` : ''}
         ${item.processedSize ? `<span class="dim-tag">${sizeKb}</span>` : ''}
       </div>
       <div class="body-col">
@@ -1801,18 +1812,17 @@ function render(){
           <button class="remove-btn" aria-label="Remove ${escapeHtml(item.originalName)} from list" onclick="removeItem('${item.id}')">✕</button>
         </div>
 
-        ${item.previewDataUrl ? `
-        <button class="crop-toggle-btn" aria-expanded="${item.cropOpen ? 'true' : 'false'}" onclick="toggleCropPanel('${item.id}')">🎯 ${item.cropOpen ? 'Close crop adjuster' : 'Adjust crop'}</button>
-        ` : (item.status !== 'processing' && item.status !== 'idle' ? `
+        ${!item.previewDataUrl && item.status !== 'processing' && item.status !== 'idle' ? `
         <div class="crop-hint">Re-upload this image to adjust its crop (not available after a page refresh).</div>
-        ` : '')}
+        ` : ''}
         ${item.cropOpen && item.previewDataUrl ? `
         <div class="crop-panel">
           <div class="crop-preview-wrap" onclick="setFocalPoint(event, '${item.id}')" role="button" tabindex="0" aria-label="Click to set focal point for cropping">
             <img src="${item.previewDataUrl}" class="crop-preview-img" draggable="false" alt="Uncropped preview of ${escapeHtml(item.originalName)}">
             <div class="crop-crosshair" style="left:${item.focalX}%;top:${item.focalY}%;"></div>
           </div>
-          <div class="crop-hint">Click on the image to set the focal point that stays in frame when cropped.</div>
+          <div class="crop-hint">Click on the image above to set the focal point that stays in frame when cropped.</div>
+          <button class="crop-done-btn" onclick="toggleCropPanel('${item.id}')">Done adjusting crop</button>
         </div>` : ''}
 
         <div class="auto-badge" id="badge-${item.id}">${item.sourceType === 'url' ? '🔗 Link Image (auto-detected)' : '📝 Description (auto-detected)'}</div>
