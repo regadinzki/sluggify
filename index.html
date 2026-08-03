@@ -570,12 +570,40 @@ function onPrimaryPresetChange(){
   const preset = document.getElementById('primarySizePreset').value;
   setPrimarySize({ preset });
   refreshPrimarySizeUI();
+  applyPrimarySizeToAllItems();
 }
 function onPrimaryCustomChange(){
   const w = Math.max(10, Math.min(5000, parseInt(document.getElementById('primaryCustomW').value, 10) || 1536));
   const h = Math.max(10, Math.min(5000, parseInt(document.getElementById('primaryCustomH').value, 10) || 700));
   setPrimarySize({ preset: 'custom', w, h });
   refreshPrimarySizeUI();
+  applyPrimarySizeToAllItems();
+}
+
+// Changing the size dropdown/custom fields updates every image already in
+// the list (not just future uploads), so picking the wrong size at first
+// doesn't mean deleting everything and starting over. Only images still in
+// memory this session (item._img) can actually be re-cropped — images
+// restored from a previous session after a refresh keep their old crop,
+// since the original file isn't persisted (see the crop-adjuster limitation
+// noted elsewhere in this file).
+function applyPrimarySizeToAllItems(){
+  if (!items.length) return;
+  const size = getPrimarySize();
+  const targets = items.filter(i => i.targetW !== size.w || i.targetH !== size.h);
+  if (!targets.length) return;
+
+  targets.forEach(item => { item.targetW = size.w; item.targetH = size.h; });
+  render();
+
+  const recroppable = targets.filter(i => i._img);
+  const skipped = targets.length - recroppable.length;
+  Promise.all(recroppable.map(item => recropItem(item))).then(() => {
+    render();
+    let msg = `Resized ${recroppable.length} image${recroppable.length === 1 ? '' : 's'} to the new size.`;
+    if (skipped) msg += ` (${skipped} restored from a previous session couldn't be re-cropped — re-upload ${skipped === 1 ? 'it' : 'them'} to apply the new size.)`;
+    showToast(msg);
+  });
 }
 
 // ---- Compression quality mode: auto (target under 250KB) or manual slider ----
