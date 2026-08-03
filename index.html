@@ -9,11 +9,11 @@
 <link rel="canonical" href="https://sluggify.imageresizer.workers.dev/">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2314161A'/%3E%3Ctext x='50' y='68' font-family='monospace' font-size='58' font-weight='700' fill='%234FD98B' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Sluggify — SEO Image Renamer, Resizer & Alt Text Generator">
+<meta property="og:title" content="SEO Image Renamer, Resizer & Alt Text Generator - Sluggify">
 <meta property="og:description" content="Resize images, generate SEO-friendly filenames, and write alt text automatically. Free AI tool that runs entirely in your browser. No uploads to any server.">
 <meta property="og:url" content="https://sluggify.imageresizer.workers.dev/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Sluggify — SEO Image Renamer, Resizer & Alt Text Generator">
+<meta name="twitter:title" content="SEO Image Renamer, Resizer & Alt Text Generator - Sluggify">
 <meta name="twitter:description" content="Resize images, generate SEO-friendly filenames, and write alt text automatically. Free AI tool that runs entirely in your browser.">
 <script type="application/ld+json">
 {
@@ -367,7 +367,7 @@
   <header>
     <div class="brand">
       <h1>Sluggify</h1>
-      <p>Resize your images instantly — no signup needed. Add a free AI key if you also want SEO-friendly filenames and alt text written for you.</p>
+      <p>Resize your images instantly, no signup needed. Add a free AI key if you also want SEO-friendly filenames and alt text written for you.</p>
     </div>
   </header>
 
@@ -406,7 +406,7 @@
   </div>
 
   <div class="apikey-bar" id="apikeyBar">
-    <div class="apikey-hint" id="apikeyHint">This uses a free AI service to write SEO filenames &amp; alt text — setup takes about 30 seconds, no credit card needed.</div>
+    <div class="apikey-hint" id="apikeyHint">This uses a free AI service to write SEO filenames &amp; alt text. Setup takes about 30 seconds, no credit card needed.</div>
     <div class="apikey-row">
       <div class="toggle" id="providerToggle" style="display:none;">
         <button id="providerBtnGroq" onclick="setProvider('groq')">Groq</button>
@@ -467,7 +467,7 @@
     <h3>How it works</h3>
     <p>Resizing, cropping, and AI calls all happen locally in your browser. No images are uploaded to any server we control. You bring your own free Groq API key, or a paid Anthropic key for higher-quality results. There's no subscription and no hidden cost.</p>
     <h3>About your data and your API key</h3>
-    <p>Sluggify has no backend server. Your images are resized on your own device, and any AI request goes straight from your browser to Groq or Anthropic — Sluggify never receives your images or your API key. You can verify this yourself: open your browser's DevTools, check the Network tab, and you'll see requests only going to <code>api.groq.com</code> or <code>api.anthropic.com</code>, never to sluggify's own domain. The code is open source — <a href="https://github.com/regadinzki/sluggify" target="_blank" rel="noopener">view it on GitHub</a>.</p>
+    <p>Sluggify has no backend server. Your images are resized on your own device, and any AI request goes straight from your browser to Groq or Anthropic. Sluggify never receives your images or your API key. You can verify this yourself: open your browser's DevTools, check the Network tab, and you'll see requests only going to <code>api.groq.com</code> or <code>api.anthropic.com</code>, never to sluggify's own domain. The code is open source, so you can <a href="https://github.com/regadinzki/sluggify" target="_blank" rel="noopener">view it on GitHub</a>.</p>
   </section>
 
   <footer>
@@ -601,7 +601,7 @@ function applyPrimarySizeToAllItems(){
   Promise.all(recroppable.map(item => recropItem(item))).then(() => {
     render();
     let msg = `Resized ${recroppable.length} image${recroppable.length === 1 ? '' : 's'} to the new size.`;
-    if (skipped) msg += ` (${skipped} restored from a previous session couldn't be re-cropped — re-upload ${skipped === 1 ? 'it' : 'them'} to apply the new size.)`;
+    if (skipped) msg += ` (${skipped} restored from a previous session couldn't be re-cropped. Re-upload ${skipped === 1 ? 'it' : 'them'} to apply the new size.)`;
     showToast(msg);
   });
 }
@@ -619,6 +619,9 @@ function getQualityMode(){
 function setQualityMode(mode){
   try { localStorage.setItem('sluggify_quality_mode', mode); } catch(e){ memoryQualityMode.mode = mode; }
   refreshQualityUI();
+  // Re-apply to images already in the list too, same as changing the size
+  // preset — switching Auto/Manual shouldn't require deleting everything.
+  Promise.all(items.filter(i => i._img).map(item => recropItem(item))).then(updateQualityDelta);
 }
 let _qualityDebounceTimer = null;
 function onQualitySliderInput(val){
@@ -862,7 +865,7 @@ function handleFiles(fileList){
     showToast(`Skipped ${unsupported.length} file(s): HEIC/HEIF photos aren't supported by most browsers. Export as JPG first.`);
   }
   if (tooBig.length){
-    showToast(`Skipped ${tooBig.length} file(s) over 25MB — too large to process smoothly in the browser.`);
+    showToast(`Skipped ${tooBig.length} file(s) over 25MB, too large to process smoothly in the browser.`);
   }
 
   usable.forEach(addImage);
@@ -1357,7 +1360,7 @@ async function callAI(provider, apiKey, systemPrompt, userMsg, statusUpdateFn){
     }
 
     if (response.status === 401 || response.status === 403){
-      throw new Error('API key rejected — double-check it\'s correct and saved for the right provider (Groq vs Anthropic).');
+      throw new Error('API key rejected. Double-check it\'s correct and saved for the right provider (Groq vs Anthropic).');
     }
 
     throw new Error((data && data.error && data.error.message) || ('HTTP ' + response.status));
@@ -1702,7 +1705,7 @@ function loadJSZip(){
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
     script.onload = resolve;
-    script.onerror = () => reject(new Error('Failed to load ZIP library — check your connection.'));
+    script.onerror = () => reject(new Error('Failed to load ZIP library. Check your connection and try again.'));
     document.head.appendChild(script);
   });
   return _jsZipLoadPromise;
