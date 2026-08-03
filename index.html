@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO Image Renamer, Resizer & Alt Text Generator - Sluggify</title>
+<meta name="description" content="Resize images, generate SEO-friendly filenames, and write alt text automatically. Free AI tool that runs entirely in your browser. No uploads to any server.">
+<meta name="robots" content="index, follow">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Sluggify",
+  "applicationCategory": "SEO Tool",
+  "operatingSystem": "Any (runs in web browser)",
+  "description": "Free browser-based tool that resizes images, generates SEO-friendly filenames, and writes alt text automatically using AI. Everything runs locally in your browser. No server uploads.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "Search Agency"
+  }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg: #14161A;
+    --bg-soft: #1A1D22;
+    --card: #1E2126;
+    --card-border: #2B2F36;
+    --accent: #E8E6E2;
+    --accent-dim: #6B7280;
+    --text: #E8E6E2;
+    --text-dim: #8B9099;
+    --green: #4FD98B;
+    --green-dim: #2E7A56;
+    --red: #F2555A;
+    --red-dim: #8A3538;
+    --tag-notch: #0E0F12;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Geist', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px;}
+
+  /* Header */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+  .brand{display:flex;flex-direction:column;gap:4px;}
+  .brand h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-0.01em;font-family:'Geist Mono',monospace;}
+  .brand p{margin:0;color:var(--text-dim);font-size:13.5px;max-width:520px;line-height:1.5;}
+
+  button{font-family:inherit;cursor:pointer;border:none;}
+  .btn-primary{
+    background:var(--accent);color:var(--bg);font-weight:600;font-size:13.5px;
+    padding:11px 18px;border-radius:8px;display:flex;align-items:center;gap:8px;
+    transition:filter .15s ease, transform .1s ease;
+  }
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-primary:active{transform:scale(.98);}
+  .btn-primary:disabled{background:#2B2F36;color:#5B6470;cursor:not-allowed;}
+
+  .btn-ghost{
+    background:transparent;border:1px solid var(--card-border);color:var(--text-dim);
+    font-size:12.5px;padding:9px 14px;border-radius:8px;transition:all .15s ease;
+  }
+  .btn-ghost:hover{border-color:var(--accent-dim);color:var(--text);}
+
+  /* Dropzone */
+  .dropzone{
+    border:1.5px dashed var(--card-border);
+    border-radius:14px;
+    padding:36px 20px;
+    text-align:center;
+    background:var(--bg-soft);
+    transition:border-color .2s ease, background .2s ease;
+    margin-bottom:24px;
+    cursor:pointer;
+  }
+  .dropzone.drag{border-color:var(--accent);background:#1F2937;}
+  .dropzone .icon{font-size:26px;margin-bottom:8px;opacity:.8;}
+  .dropzone .title{font-size:14.5px;font-weight:600;}
+  .dropzone .sub{font-size:12.5px;color:var(--text-dim);margin-top:4px;}
+  .dropzone.compact{padding:14px;margin-bottom:20px;}
+  .dropzone.compact .title{font-size:13px;}
+  input[type=file]{display:none;}
+
+  /* Settings bar */
+  .settings{
+    display:flex;gap:18px;flex-wrap:wrap;align-items:center;
+    background:var(--bg-soft);border:1px solid var(--card-border);
+    border-radius:10px;padding:12px 16px;margin-bottom:24px;
+    font-size:12.5px;color:var(--text-dim);
+  }
+  .settings b{color:var(--text);font-weight:600;}
+  .settings .divider{width:1px;height:14px;background:var(--card-border);}
+  .custom-size-check{display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-dim);}
+  .custom-size-check input{cursor:pointer;}
+  .size-input{
+    width:72px;background:var(--bg-soft);border:1px solid var(--card-border);color:var(--text);
+    font-size:12px;padding:5px 8px;border-radius:6px;outline:none;font-family:'Geist Mono',monospace;
+  }
+  .size-input:focus{border-color:var(--accent-dim);}
+  .size-select{
+    background:var(--bg-soft);border:1px solid var(--card-border);color:var(--text);
+    font-size:12px;padding:5px 8px;border-radius:6px;outline:none;font-family:'Geist',sans-serif;cursor:pointer;
+  }
+  .size-select:focus{border-color:var(--accent-dim);}
+  input[type=range]{accent-color:var(--accent);width:110px;vertical-align:middle;}
+  .quality-value{font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--text-dim);min-width:24px;}
+
+  .sticky-actionbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    flex-wrap:wrap;
+    background:var(--bg-soft);border:1px solid var(--card-border);
+    border-radius:10px;padding:10px 14px;margin-bottom:16px;
+    backdrop-filter:blur(6px);
+  }
+  .sticky-actionbar-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .sticky-actionbar-label{font-size:12px;color:var(--text-dim);}
+  .sticky-actionbar-buttons{display:flex;gap:10px;flex-wrap:wrap;}
+
+  .sticky-quality{display:flex;align-items:center;gap:7px;}
+  .quality-hint-label{font-size:10px;color:var(--text-dim);white-space:nowrap;}
+  .quality-delta{font-family:'Geist Mono',monospace;font-size:11px;color:var(--green);white-space:nowrap;}
+
+  /* Cards */
+  .list{display:flex;flex-direction:column;gap:16px;}
+  .card{
+    position:relative;
+    display:flex;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .tag-edge{
+    width:14px;flex-shrink:0;background:var(--tag-notch);
+    background-image: repeating-linear-gradient(to bottom, transparent 0 6px, var(--card-border) 6px 8px);
+    background-position:center;background-size:2px 100%;background-repeat:no-repeat;
+  }
+
+  .thumb-col{width:190px;flex-shrink:0;background:#0E0F12;display:flex;align-items:center;justify-content:center;position:relative;}
+  .thumb-col canvas{width:100%;height:108px;object-fit:cover;display:block;}
+  .thumb-col .dim-tag{
+    position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);
+    color:var(--text-dim);font-family:'Geist Mono',monospace;font-size:9.5px;
+    padding:2px 6px;border-radius:5px;
+  }
+  .thumb-col .empty{color:var(--text-dim);font-size:11px;font-family:'Geist Mono',monospace;}
+
+  .body-col{flex:1;padding:14px 16px;min-width:0;display:flex;flex-direction:column;gap:9px;}
+  .row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .orig-name{font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-dim);word-break:break-all;}
+  .remove-btn{background:none;color:var(--text-dim);font-size:16px;line-height:1;padding:2px 6px;border-radius:6px;flex-shrink:0;}
+  .remove-btn:hover{color:var(--red);background:rgba(242,85,90,.12);}
+
+  .toggle{display:flex;gap:4px;background:var(--bg-soft);border-radius:7px;padding:3px;width:fit-content;}
+  .toggle button{
+    background:transparent;color:var(--text-dim);font-size:11.5px;font-weight:500;
+    padding:5px 10px;border-radius:5px;transition:all .15s ease;
+  }
+  .toggle button.active{background:var(--accent);color:var(--bg);}
+
+  .auto-badge{
+    display:inline-flex;align-items:center;gap:5px;width:fit-content;
+    background:var(--bg-soft);border:1px solid var(--card-border);color:var(--text-dim);
+    font-size:10.5px;font-weight:500;padding:4px 9px;border-radius:20px;
+  }
+
+  .crop-toggle-btn{
+    background:var(--bg-soft);border:1px solid var(--card-border);color:var(--text-dim);
+    font-size:11px;font-weight:600;padding:6px 11px;border-radius:7px;width:fit-content;
+    transition:all .15s;
+  }
+  .crop-toggle-btn:hover{border-color:var(--accent-dim);color:var(--text);}
+  .crop-panel{background:var(--bg-soft);border:1px solid var(--card-border);border-radius:8px;padding:10px;}
+  .crop-preview-wrap{position:relative;width:100%;cursor:crosshair;border-radius:6px;overflow:hidden;line-height:0;}
+  .crop-preview-img{width:100%;display:block;pointer-events:none;user-select:none;}
+  .crop-crosshair{
+    position:absolute;width:22px;height:22px;transform:translate(-50%,-50%);
+    border:2px solid var(--green);border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.5);
+    pointer-events:none;
+  }
+  .crop-crosshair::before, .crop-crosshair::after{
+    content:'';position:absolute;background:var(--green);
+  }
+  .crop-crosshair::before{left:50%;top:-6px;width:2px;height:6px;transform:translateX(-50%);}
+  .crop-crosshair::after{left:50%;bottom:-6px;width:2px;height:6px;transform:translateX(-50%);}
+  .crop-hint{font-size:10.5px;color:var(--text-dim);margin-top:6px;}
+
+  textarea, input[type=text]{
+    width:100%;background:var(--bg-soft);border:1px solid var(--card-border);
+    color:var(--text);font-family:'Geist',sans-serif;font-size:12.5px;
+    border-radius:7px;padding:8px 10px;resize:vertical;outline:none;transition:border-color .15s;
+  }
+  textarea{min-height:44px;}
+  textarea:focus, input[type=text]:focus{border-color:var(--accent-dim);}
+  textarea::placeholder, input::placeholder{color:#565C66;}
+
+  .gen-row{display:flex;gap:8px;align-items:center;}
+  .gen-btn{
+    background:var(--bg-soft);border:1px solid var(--card-border);color:var(--accent);
+    font-size:11.5px;font-weight:600;padding:8px 12px;border-radius:7px;
+    display:flex;align-items:center;gap:6px;transition:all .15s;white-space:nowrap;
+  }
+  .gen-btn:hover{border-color:var(--accent);}
+  .gen-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .spin{width:11px;height:11px;border:2px solid var(--accent-dim);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  .slug-row{display:flex;align-items:center;gap:6px;}
+  .slug-row input{font-family:'Geist Mono',monospace;font-size:12px;color:var(--green);}
+  .ext-tag{font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-dim);flex-shrink:0;}
+
+  .alt-row{display:flex;align-items:flex-start;gap:8px;}
+  .alt-label{
+    font-family:'Geist Mono',monospace;font-size:9.5px;letter-spacing:.06em;
+    color:var(--text-dim);flex-shrink:0;padding-top:9px;width:52px;
+  }
+  .alt-input{
+    flex:1;min-height:36px;font-size:12px;font-family:'Geist',sans-serif;
+    color:var(--text);
+  }
+  .copy-btn{
+    background:var(--bg-soft);border:1px solid var(--card-border);color:var(--text-dim);
+    font-size:11px;font-weight:600;padding:8px 12px;border-radius:7px;flex-shrink:0;
+    transition:all .15s;
+  }
+  .copy-btn:hover{border-color:var(--accent-dim);color:var(--text);}
+  .copy-btn.copied{color:var(--green);border-color:var(--green-dim);}
+
+  .diff-row{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    font-family:'Geist Mono',monospace;font-size:11px;line-height:1.5;
+    padding:8px 10px;background:var(--bg-soft);border:1px solid var(--card-border);border-radius:7px;
+  }
+  .diff-old{color:var(--red);text-decoration:line-through;text-decoration-color:var(--red-dim);opacity:.75;word-break:break-all;}
+  .diff-arrow{color:var(--text-dim);flex-shrink:0;}
+  .diff-new{color:var(--green);font-weight:600;word-break:break-all;}
+
+  .meta-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;color:var(--text-dim);font-family:'Geist Mono',monospace;flex-wrap:wrap;}
+  .status{display:flex;align-items:center;gap:6px;}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim);}
+  .dot.ok{background:var(--green);}
+  .dot.err{background:var(--red);}
+  .dot.busy{background:var(--accent);animation:pulse 1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .dl-single{background:none;color:var(--text-dim);font-size:11px;padding:4px 8px;border-radius:5px;border:1px solid var(--card-border);}
+  .dl-single:hover{color:var(--accent);border-color:var(--accent-dim);}
+  .dl-single:disabled{opacity:.35;cursor:not-allowed;}
+
+  .empty-state{text-align:center;color:var(--text-dim);font-size:13px;padding:30px 0;}
+
+  .about-copy{margin-top:48px;padding-top:32px;border-top:1px solid var(--card-border);}
+  .about-copy h2{font-family:'Geist Mono',monospace;font-size:16px;margin:0 0 12px;}
+  .about-copy h3{font-family:'Geist Mono',monospace;font-size:13px;margin:22px 0 8px;color:var(--text);}
+  .about-copy p{font-size:13px;line-height:1.7;color:var(--text-dim);margin:0 0 10px;}
+
+  footer{margin-top:30px;text-align:center;color:#565C66;font-size:11px;font-family:'Geist Mono',monospace;}
+  footer a{color:#565C66;text-decoration:underline;}
+  footer a:hover{color:var(--text-dim);}
+
+  .apikey-bar{
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    background:var(--bg-soft);border:1px solid var(--card-border);
+    border-radius:10px;padding:12px 16px;margin-bottom:24px;
+  }
+  .apikey-bar.set{border-color:rgba(111,207,151,.35);}
+  .apikey-bar .label{font-size:12px;color:var(--text-dim);white-space:nowrap;}
+  .apikey-bar input[type=password], .apikey-bar input[type=text]{
+    flex:1;min-width:180px;font-family:'Geist Mono',monospace;font-size:12px;
+  }
+  .apikey-bar .save-btn{
+    background:var(--accent);color:var(--bg);font-weight:600;font-size:12px;
+    padding:8px 14px;border-radius:7px;flex-shrink:0;
+  }
+  .apikey-bar .status-txt{font-size:11px;color:var(--green);white-space:nowrap;}
+  .apikey-bar a{color:var(--accent);text-decoration:none;}
+  .apikey-bar a:hover{text-decoration:underline;}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(10,9,8,.65);
+    display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    background:var(--card);border:1px solid var(--card-border);border-radius:12px;
+    padding:22px;width:100%;max-width:360px;
+  }
+  .modal-box h3{margin:0 0 6px;font-size:15px;font-weight:700;}
+  .modal-box p{margin:0 0 14px;font-size:12.5px;color:var(--text-dim);}
+  .modal-box input[type=text]{margin-bottom:16px;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+  .review-box{max-width:640px;}
+  .review-table-wrap{max-height:50vh;overflow-y:auto;border:1px solid var(--card-border);border-radius:8px;margin-bottom:14px;}
+  .review-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .review-table th{
+    position:sticky;top:0;background:var(--bg-soft);text-align:left;color:var(--text-dim);
+    font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;font-weight:600;
+  }
+  .review-table td{padding:8px 10px;border-top:1px solid var(--card-border);vertical-align:top;}
+  .review-table .rt-thumb{width:48px;height:28px;object-fit:cover;border-radius:4px;display:block;}
+  .review-table .rt-slug{font-family:'Geist Mono',monospace;color:var(--green);word-break:break-all;}
+  .review-table .rt-alt{color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>Sluggify</h1>
+      <p>Resize your images, generate SEO-friendly filenames, and write alt text automatically. Upload a photo, paste an image description or a link, then download.</p>
+    </div>
+  </header>
+
+  <div class="settings">
+    <span>Size:</span>
+    <select id="primarySizePreset" class="size-select" onchange="onPrimaryPresetChange()">
+      <option value="wide">Wide (1536×700)</option>
+      <option value="square">Square (1080×1080)</option>
+      <option value="4:3">4:3 (1200×900)</option>
+      <option value="16:9">16:9 (1280×720)</option>
+      <option value="custom">Custom…</option>
+    </select>
+    <input type="number" id="primaryCustomW" class="size-input" placeholder="W" min="10" max="5000" onchange="onPrimaryCustomChange()" style="display:none;">
+    <span id="primaryCustomX" style="color:var(--text-dim);display:none;">×</span>
+    <input type="number" id="primaryCustomH" class="size-input" placeholder="H" min="10" max="5000" onchange="onPrimaryCustomChange()" style="display:none;">
+    <div class="divider"></div>
+    <span>Format:</span>
+    <div class="toggle" id="formatToggle" style="margin:0;">
+      <button id="formatBtnJpg" onclick="setExportFormat('jpg')">JPG</button>
+      <button id="formatBtnWebp" onclick="setExportFormat('webp')">WebP</button>
+    </div>
+  </div>
+
+  <div class="settings">
+    <span>Extra size:</span>
+    <label class="custom-size-check">
+      <input type="checkbox" id="customSizeEnabled" onchange="onCustomSizeToggle(this.checked)">
+      <span id="customSizeLabel">Off</span>
+    </label>
+    <input type="number" id="customW" class="size-input" placeholder="W" min="10" max="5000" onchange="onCustomSizeChange()">
+    <span style="color:var(--text-dim);">×</span>
+    <input type="number" id="customH" class="size-input" placeholder="H" min="10" max="5000" onchange="onCustomSizeChange()">
+    <span style="color:var(--text-dim);">px</span>
+    <div class="divider"></div>
+    <span>Filenames from <b>AI</b> (description / URL)</span>
+  </div>
+
+  <div class="apikey-bar" id="apikeyBar">
+    <div class="toggle" id="providerToggle">
+      <button class="${''}" id="providerBtnGroq" onclick="setProvider('groq')">Groq (Free)</button>
+      <button id="providerBtnAnthropic" onclick="setProvider('anthropic')">Anthropic (Paid)</button>
+    </div>
+    <span class="label" id="apikeyLabel">🔑 Groq API Key</span>
+    <input type="password" id="apikeyInput" placeholder="gsk_...">
+    <button class="save-btn" onclick="saveApiKey()">Save</button>
+    <span class="status-txt" id="apikeyStatus"></span>
+    <span class="label" id="apikeyLink">· Don't have one? <a href="https://console.groq.com/keys" target="_blank">Create one free</a></span>
+  </div>
+
+  <div class="dropzone" id="dropzone">
+    <div class="icon">🎞️</div>
+    <div class="title">Drag images here, or click to select files</div>
+    <div class="sub">Multiple files supported · JPG / PNG / WEBP</div>
+    <input type="file" id="fileInput" multiple accept="image/*">
+  </div>
+
+  <div class="sticky-actionbar" id="stickyActionbar" style="display:none;">
+    <div class="sticky-actionbar-left">
+      <span class="sticky-actionbar-label" id="stickyCount"></span>
+      <span class="sticky-actionbar-label" id="bulkStatusTxt"></span>
+      <div class="toggle" id="qualityModeToggle" style="margin:0;">
+        <button id="qualityBtnAuto" onclick="setQualityMode('auto')">Auto</button>
+        <button id="qualityBtnManual" onclick="setQualityMode('manual')">Manual</button>
+      </div>
+      <div class="sticky-quality" id="stickyQualityWrap" style="display:none;">
+        <span class="quality-hint-label">Small &amp; blurry</span>
+        <input type="range" id="qualitySlider" min="1" max="100" value="80" oninput="onQualitySliderInput(this.value)">
+        <span class="quality-hint-label">Large &amp; sharp</span>
+        <span id="qualitySliderValue" class="quality-value">80</span>
+        <span id="qualityDeltaTxt" class="quality-delta"></span>
+      </div>
+    </div>
+    <div class="sticky-actionbar-buttons">
+      <button class="gen-btn" id="generateAllBtn" onclick="generateAllSlugs()">✨ Generate All Names</button>
+      <button class="btn-ghost" id="reviewAllBtn" disabled onclick="openReviewModal()">📋 Review All</button>
+      <button class="btn-ghost" id="deleteAllBtn" disabled>🗑 Delete All</button>
+      <button class="btn-primary" id="downloadAllBtn" disabled>⇩ Download All</button>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+  <div class="empty-state" id="emptyState">No images yet. Upload some above to get started.</div>
+
+  <section class="about-copy">
+    <h2>What is Sluggify?</h2>
+    <p>Sluggify is a free, AI-powered tool for renaming and resizing images, and for writing alt text. It's built for SEO practitioners and content teams.</p>
+    <p>If you publish articles with stock photos or property images, you know the drill. Download the image. Resize it. Compress it. Rename it with something search-friendly. Write the alt text. Then do it again, dozens of times a day.</p>
+    <p>Sluggify automates all of it. Drop in your images, paste the image description or the source link, and get an SEO-friendly filename plus ready-to-use alt text in seconds. It's powered by AI and runs entirely in your browser.</p>
+    <h3>Why filenames and alt text matter for SEO</h3>
+    <p>Descriptive, hyphenated filenames and well-written alt text are both part of Google's official image SEO guidance. Neither one is a major ranking factor by itself. But they're free, they're easy, and most teams skip them simply because doing them by hand doesn't scale. That's the gap Sluggify fills.</p>
+    <h3>How it works</h3>
+    <p>Resizing, cropping, and AI calls all happen locally in your browser. No images are uploaded to any server we control. You bring your own free Groq API key, or a paid Anthropic key for higher-quality results. There's no subscription and no hidden cost.</p>
+  </section>
+
+  <footer><a href="mailto:regaaljundi@gmail.com">Send feedback</a></footer>
+</div>
+
+<div class="modal-overlay" id="zipModal">
+  <div class="modal-box">
+    <h3>ZIP file name</h3>
+    <p>Choose a name for your ZIP file before downloading.</p>
+    <input type="text" id="zipNameInput" placeholder="e.g. somerset-chancellor-court">
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeZipModal()">Cancel</button>
+      <button class="btn-primary" onclick="confirmDownloadAll()">⇩ Download ZIP</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal-box review-box">
+    <h3>Review before you download</h3>
+    <p>A quick look at every filename and alt text, all in one place.</p>
+    <div class="review-table-wrap">
+      <table class="review-table" id="reviewTable"></table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closeReviewModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MAX_BYTES = 250 * 1024;
+const PRESET_SIZES = {
+  wide: { w: 1536, h: 700 },
+  square: { w: 1080, h: 1080 },
+  '4:3':  { w: 1200, h: 900 },
+  '16:9': { w: 1280, h: 720 }
+};
+let items = [];
+let idCounter = 0;
+let memoryExportFormat = 'jpg';
+
+// ---- Primary output size (preset dropdown or custom) ----
+let memoryPrimarySize = { preset: 'wide', w: 1536, h: 700 };
+function getPrimarySize(){
+  try {
+    const preset = localStorage.getItem('sluggify_primary_preset') || 'wide';
+    if (preset === 'custom'){
+      return {
+        preset,
+        w: parseInt(localStorage.getItem('sluggify_primary_w'), 10) || 1536,
+        h: parseInt(localStorage.getItem('sluggify_primary_h'), 10) || 700
+      };
+    }
+    const p = PRESET_SIZES[preset] || PRESET_SIZES.wide;
+    return { preset, w: p.w, h: p.h };
+  } catch(e){ return memoryPrimarySize; }
+}
+function setPrimarySize({ preset, w, h }){
+  try {
+    if (preset) localStorage.setItem('sluggify_primary_preset', preset);
+    if (w) localStorage.setItem('sluggify_primary_w', w);
+    if (h) localStorage.setItem('sluggify_primary_h', h);
+  } catch(e){
+    if (preset) memoryPrimarySize.preset = preset;
+    if (w) memoryPrimarySize.w = w;
+    if (h) memoryPrimarySize.h = h;
+  }
+}
+function refreshPrimarySizeUI(){
+  const s = getPrimarySize();
+  document.getElementById('primarySizePreset').value = s.preset;
+  const isCustom = s.preset === 'custom';
+  document.getElementById('primaryCustomW').style.display = isCustom ? 'inline-block' : 'none';
+  document.getElementById('primaryCustomX').style.display = isCustom ? 'inline' : 'none';
+  document.getElementById('primaryCustomH').style.display = isCustom ? 'inline-block' : 'none';
+  if (isCustom){
+    document.getElementById('primaryCustomW').value = s.w;
+    document.getElementById('primaryCustomH').value = s.h;
+  }
+}
+function onPrimaryPresetChange(){
+  const preset = document.getElementById('primarySizePreset').value;
+  setPrimarySize({ preset });
+  refreshPrimarySizeUI();
+}
+function onPrimaryCustomChange(){
+  const w = Math.max(10, Math.min(5000, parseInt(document.getElementById('primaryCustomW').value, 10) || 1536));
+  const h = Math.max(10, Math.min(5000, parseInt(document.getElementById('primaryCustomH').value, 10) || 700));
+  setPrimarySize({ preset: 'custom', w, h });
+  refreshPrimarySizeUI();
+}
+
+// ---- Compression quality mode: auto (target under 250KB) or manual slider ----
+let memoryQualityMode = { mode: 'auto', quality: 80 };
+function getQualityMode(){
+  try {
+    return {
+      mode: localStorage.getItem('sluggify_quality_mode') || 'auto',
+      quality: parseInt(localStorage.getItem('sluggify_quality_value'), 10) || 80
+    };
+  } catch(e){ return memoryQualityMode; }
+}
+function setQualityMode(mode){
+  try { localStorage.setItem('sluggify_quality_mode', mode); } catch(e){ memoryQualityMode.mode = mode; }
+  refreshQualityUI();
+}
+let _qualityDebounceTimer = null;
+function onQualitySliderInput(val){
+  try { localStorage.setItem('sluggify_quality_value', val); } catch(e){ memoryQualityMode.quality = val; }
+  document.getElementById('qualitySliderValue').textContent = val;
+
+  // Live-update the KB size shown on each card as the slider moves (debounced
+  // so it doesn't recompress on every single pixel of the drag).
+  clearTimeout(_qualityDebounceTimer);
+  _qualityDebounceTimer = setTimeout(() => {
+    Promise.all(items.filter(i => i._img).map(item => recropItem(item))).then(updateQualityDelta);
+  }, 200);
+}
+function refreshQualityUI(){
+  const q = getQualityMode();
+  const isManual = q.mode === 'manual';
+  document.getElementById('qualityBtnAuto').classList.toggle('active', !isManual);
+  document.getElementById('qualityBtnManual').classList.toggle('active', isManual);
+  document.getElementById('stickyQualityWrap').style.display = isManual ? 'flex' : 'none';
+  document.getElementById('qualitySlider').value = q.quality;
+  document.getElementById('qualitySliderValue').textContent = q.quality;
+  updateQualityDelta();
+}
+
+// Shows how much smaller the processed files are than the originals, so the
+// 1-100 quality number isn't the only feedback the person has to go on.
+function updateQualityDelta(){
+  const el = document.getElementById('qualityDeltaTxt');
+  if (!el) return;
+  const withSizes = items.filter(i => i.processedSize && i.file && i.file.size);
+  if (!withSizes.length){ el.textContent = ''; return; }
+  const origTotal = withSizes.reduce((sum, i) => sum + i.file.size, 0);
+  const newTotal = withSizes.reduce((sum, i) => sum + i.processedSize, 0);
+  const pct = Math.round((1 - newTotal / origTotal) * 100);
+  el.textContent = pct > 0 ? `≈${pct}% smaller than original` : `≈${Math.abs(pct)}% larger than original`;
+}
+
+function getExportFormat(){
+  try { return localStorage.getItem('sluggify_format') || 'jpg'; }
+  catch(e){ return memoryExportFormat; }
+}
+function setExportFormat(fmt){
+  try { localStorage.setItem('sluggify_format', fmt); } catch(e){ memoryExportFormat = fmt; }
+  refreshFormatToggle();
+}
+function refreshFormatToggle(){
+  const fmt = getExportFormat();
+  document.getElementById('formatBtnJpg').classList.toggle('active', fmt === 'jpg');
+  document.getElementById('formatBtnWebp').classList.toggle('active', fmt === 'webp');
+}
+function currentMime(){
+  return getExportFormat() === 'webp' ? 'image/webp' : 'image/jpeg';
+}
+function currentExt(){
+  return getExportFormat() === 'webp' ? '.webp' : '.jpg';
+}
+
+let memoryKeys = { groq: '', anthropic: '' }; // fallback if localStorage unavailable
+let activeProvider = 'groq';
+
+function getActiveProvider(){
+  try { return localStorage.getItem('sluggify_provider') || 'groq'; }
+  catch(e){ return activeProvider; }
+}
+function setActiveProvider(p){
+  activeProvider = p;
+  try { localStorage.setItem('sluggify_provider', p); } catch(e){}
+}
+function getApiKey(provider){
+  provider = provider || getActiveProvider();
+  try { return localStorage.getItem('sluggify_key_' + provider) || ''; }
+  catch(e){ return memoryKeys[provider] || ''; }
+}
+function setApiKey(provider, key){
+  try { localStorage.setItem('sluggify_key_' + provider, key); }
+  catch(e){ memoryKeys[provider] = key; }
+}
+function setProvider(p){
+  setActiveProvider(p);
+  refreshApiKeyBar();
+}
+function saveApiKey(){
+  const val = document.getElementById('apikeyInput').value.trim();
+  if (!val){ alert('Please enter an API key first.'); return; }
+  setApiKey(getActiveProvider(), val);
+  refreshApiKeyBar();
+}
+function refreshApiKeyBar(){
+  const provider = getActiveProvider();
+  const key = getApiKey(provider);
+  const bar = document.getElementById('apikeyBar');
+  const status = document.getElementById('apikeyStatus');
+  const input = document.getElementById('apikeyInput');
+  const label = document.getElementById('apikeyLabel');
+  const linkWrap = document.getElementById('apikeyLink');
+  const btnGroq = document.getElementById('providerBtnGroq');
+  const btnAnthropic = document.getElementById('providerBtnAnthropic');
+
+  btnGroq.classList.toggle('active', provider === 'groq');
+  btnAnthropic.classList.toggle('active', provider === 'anthropic');
+
+  if (provider === 'groq'){
+    label.textContent = '🔑 Groq API Key';
+    input.placeholder = 'gsk_...';
+    linkWrap.innerHTML = "· Don't have one? <a href=\"https://console.groq.com/keys\" target=\"_blank\">Create one free</a>";
+  } else {
+    label.textContent = '🔑 Anthropic API Key';
+    input.placeholder = 'sk-ant-api03-...';
+    linkWrap.innerHTML = "· Don't have one? <a href=\"https://console.anthropic.com/settings/keys\" target=\"_blank\">Create one here</a>";
+  }
+
+  if (key){
+    bar.classList.add('set');
+    status.textContent = '✓ Saved';
+    input.value = key;
+    input.type = 'password';
+  } else {
+    bar.classList.remove('set');
+    status.textContent = '';
+    input.value = '';
+  }
+}
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const list = document.getElementById('list');
+const emptyState = document.getElementById('emptyState');
+const downloadAllBtn = document.getElementById('downloadAllBtn');
+const deleteAllBtn = document.getElementById('deleteAllBtn');
+
+deleteAllBtn.addEventListener('click', () => {
+  if (!items.length) return;
+  if (confirm("Delete all images from the list? Files you've already downloaded won't be affected. This only clears the list.")) {
+    items = [];
+    clearAllFromDB();
+    render();
+  }
+});
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+function handleFiles(fileList){
+  [...fileList].filter(f => f.type.startsWith('image/')).forEach(addImage);
+  render();
+}
+
+// ---- Session persistence (IndexedDB) so a refresh doesn't lose progress ----
+const DB_NAME = 'SluggifyDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'items';
+
+function openSessionDB(){
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB){ reject(new Error('IndexedDB is not supported')); return; }
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)){
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function persistItem(item){
+  try {
+    const db = await openSessionDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put({
+      id: item.id,
+      originalName: item.originalName,
+      sourceType: item.sourceType,
+      inputText: item.inputText,
+      slug: item.slug,
+      altText: item.altText || '',
+      status: item.status === 'generating' ? (item.processedBlob ? 'ready' : 'idle') : item.status,
+      errorMsg: '',
+      processedBlob: item.processedBlob || null,
+      processedSize: item.processedSize || 0,
+      thumbDataUrl: item.thumbDataUrl || null,
+      focalX: item.focalX,
+      focalY: item.focalY,
+      targetW: item.targetW,
+      targetH: item.targetH,
+      format: item.format
+    });
+  } catch(e){ console.warn('Failed to save session:', e); }
+}
+
+async function removeItemFromDB(id){
+  try {
+    const db = await openSessionDB();
+    db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).delete(id);
+  } catch(e){ /* non-fatal */ }
+}
+
+async function clearAllFromDB(){
+  try {
+    const db = await openSessionDB();
+    db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).clear();
+  } catch(e){ /* non-fatal */ }
+}
+
+async function loadSessionFromDB(){
+  try {
+    const db = await openSessionDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch(e){ return []; }
+}
+
+function showToast(msg){
+  let toast = document.getElementById('goPublishToast');
+  if (!toast){
+    toast = document.createElement('div');
+    toast.id = 'goPublishToast';
+    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1E2126;border:1px solid #2B2F36;color:#4FD98B;font-family:Geist,sans-serif;font-size:12.5px;padding:10px 18px;border-radius:20px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.4);';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+
+async function restoreSession(){
+  const saved = await loadSessionFromDB();
+  if (saved && saved.length){
+    items = saved.map(s => ({
+      ...s,
+      file: null,
+      _img: null,
+      previewDataUrl: null, // not persisted (would bloat storage) — adjust-crop unavailable after reload
+      cropOpen: false,
+      focalX: s.focalX ?? 50,
+      focalY: s.focalY ?? 50,
+      targetW: s.targetW ?? 1536,
+      targetH: s.targetH ?? 700,
+      format: s.format ?? 'jpg'
+    }));
+    idCounter = items.reduce((max, i) => {
+      const n = parseInt((i.id || 'img_0').split('_')[1], 10) || 0;
+      return Math.max(max, n);
+    }, 0);
+    render();
+    showToast(`✓ Previous session restored (${items.length} image${items.length > 1 ? 's' : ''})`);
+  }
+}
+
+function addImage(file){
+  const id = 'img_' + (++idCounter);
+  const size = getPrimarySize();
+  const item = {
+    id, file, originalName: file.name,
+    sourceType: 'description', // or 'url'
+    inputText: '',
+    slug: '',
+    altText: '',
+    status: 'idle', // idle | processing | ready | generating | error
+    errorMsg: '',
+    processedBlob: null,
+    processedSize: 0,
+    thumbDataUrl: null,
+    previewDataUrl: null,
+    focalX: 50,
+    focalY: 50,
+    cropOpen: false,
+    format: getExportFormat(),
+    targetW: size.w,
+    targetH: size.h
+  };
+  items.push(item);
+  processImage(item);
+}
+
+// Cover-crop a source image into targetW x targetH, centered on a focal point
+// (percentages 0-100) instead of always dead-center. The crop rectangle is
+// clamped so it never goes outside the source image bounds.
+function cropToCanvas(img, targetW, targetH, focalXPct, focalYPct){
+  const canvas = document.createElement('canvas');
+  canvas.width = targetW; canvas.height = targetH;
+  const scale = Math.max(targetW / img.width, targetH / img.height);
+  const sw = targetW / scale, sh = targetH / scale;
+  const focalXPx = (focalXPct / 100) * img.width;
+  const focalYPx = (focalYPct / 100) * img.height;
+  let sx = focalXPx - sw / 2;
+  let sy = focalYPx - sh / 2;
+  sx = Math.max(0, Math.min(sx, img.width - sw));
+  sy = Math.max(0, Math.min(sy, img.height - sh));
+  canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+  return canvas;
+}
+
+function fileToImage(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function processImage(item){
+  item.status = 'processing';
+  render();
+  const mime = item.format === 'webp' ? 'image/webp' : 'image/jpeg';
+  fileToImage(item.file).then(img => {
+    item._img = img; // keep in memory for re-cropping & custom-size export this session
+    // Small uncropped preview for the focal-point picker UI (max 480px wide).
+    const pw = Math.min(480, img.width);
+    const ph = Math.round(pw * (img.height / img.width));
+    const previewCanvas = document.createElement('canvas');
+    previewCanvas.width = pw; previewCanvas.height = ph;
+    previewCanvas.getContext('2d').drawImage(img, 0, 0, pw, ph);
+    item.previewDataUrl = previewCanvas.toDataURL('image/jpeg', 0.8);
+
+    recropItem(item, mime);
+  }).catch(() => {
+    item.status = 'error'; item.errorMsg = 'Failed to load image'; render();
+  });
+}
+
+// Re-runs the main crop (at the item's chosen output size) using its current focal point.
+// Requires item._img to still be in memory (same-session only).
+function recropItem(item, mime){
+  if (!item._img) return Promise.resolve();
+  mime = mime || (item.format === 'webp' ? 'image/webp' : 'image/jpeg');
+  const canvas = cropToCanvas(item._img, item.targetW, item.targetH, item.focalX, item.focalY);
+  item.thumbDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+  return compressToTarget(canvas, mime).then(({blob, size}) => {
+    item.processedBlob = blob;
+    item.processedSize = size;
+    item.status = 'ready';
+    render();
+    persistItem(item);
+  });
+}
+
+function compressToTarget(canvas, mime){
+  mime = mime || 'image/jpeg';
+  const qm = getQualityMode();
+
+  // Manual mode: encode once at the chosen quality and accept whatever size
+  // results — the person has explicitly taken control of the size/quality
+  // trade-off, so we don't second-guess it with the auto compression ladder.
+  if (qm.mode === 'manual'){
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve({ blob, size: blob.size });
+      }, mime, qm.quality / 100);
+    });
+  }
+
+  return new Promise((resolve) => {
+    const qualities = [0.92, 0.85, 0.78, 0.7, 0.62, 0.54, 0.46, 0.38, 0.3, 0.22, 0.15];
+    let i = 0;
+    function tryNext(){
+      const q = qualities[Math.min(i, qualities.length - 1)];
+      canvas.toBlob((blob) => {
+        if (blob.size <= MAX_BYTES){
+          resolve({blob, size: blob.size});
+        } else if (i < qualities.length - 1){
+          i++;
+          tryNext();
+        } else {
+          // Quality alone isn't enough. Reduce actual detail by downsampling
+          // then upscaling back to the required output size, so the final
+          // file keeps the exact required dimensions but has less fine
+          // detail to compress, which lowers the file size further.
+          fallbackDownsample(canvas, blob);
+        }
+      }, mime, q);
+    }
+    function fallbackDownsample(fullCanvas, lastBlob){
+      const outW = fullCanvas.width, outH = fullCanvas.height;
+      const factors = [0.85, 0.7, 0.55, 0.42, 0.3];
+      let f = 0;
+      function tryFactor(){
+        if (f >= factors.length){
+          // Give up gracefully, return the smallest we managed to produce
+          resolve({blob: lastBlob, size: lastBlob.size});
+          return;
+        }
+        const factor = factors[f];
+        const smallW = Math.round(outW * factor);
+        const smallH = Math.round(outH * factor);
+        const smallCanvas = document.createElement('canvas');
+        smallCanvas.width = smallW; smallCanvas.height = smallH;
+        smallCanvas.getContext('2d').drawImage(fullCanvas, 0, 0, smallW, smallH);
+
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = outW; finalCanvas.height = outH;
+        finalCanvas.getContext('2d').drawImage(smallCanvas, 0, 0, outW, outH);
+
+        finalCanvas.toBlob((blob) => {
+          if (blob.size <= MAX_BYTES || f >= factors.length - 1){
+            resolve({blob, size: blob.size});
+          } else {
+            f++;
+            tryFactor();
+          }
+        }, mime, 0.6);
+      }
+      tryFactor();
+    }
+    tryNext();
+  });
+}
+
+function detectSourceType(text){
+  return /^https?:\/\//i.test((text || '').trim()) ? 'url' : 'description';
+}
+
+function updateInputText(id, val){
+  const item = items.find(i => i.id === id);
+  item.inputText = val;
+  item.sourceType = detectSourceType(val);
+}
+
+function updateSlug(id, val){
+  const item = items.find(i => i.id === id);
+  item.slug = slugify(val);
+  persistItem(item);
+}
+
+function updateAltText(id, val){
+  const item = items.find(i => i.id === id);
+  item.altText = val;
+  persistItem(item);
+}
+
+function copyAltText(id){
+  const item = items.find(i => i.id === id);
+  if (!item || !item.altText) return;
+  navigator.clipboard.writeText(item.altText).then(() => {
+    const btn = document.getElementById('copyBtn-' + id);
+    if (!btn) return;
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function humanizeWords(slugStr){
+  return (slugStr || '')
+    .split('-')
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+function slugify(str){
+  return (str || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
+function stripExt(name){
+  return (name || '').replace(/\.[a-zA-Z0-9]+$/, '');
+}
+
+function sanitizeFilename(str){
+  return (str || '')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .trim();
+}
+
+function removeItem(id){
+  items = items.filter(i => i.id !== id);
+  removeItemFromDB(id);
+  render();
+}
+
+function toggleCropPanel(id){
+  const item = items.find(i => i.id === id);
+  item.cropOpen = !item.cropOpen;
+  render();
+}
+
+function setFocalPoint(event, id){
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const xPct = ((event.clientX - rect.left) / rect.width) * 100;
+  const yPct = ((event.clientY - rect.top) / rect.height) * 100;
+  item.focalX = Math.max(0, Math.min(100, xPct));
+  item.focalY = Math.max(0, Math.min(100, yPct));
+  recropItem(item);
+  render();
+}
+
+async function generateSlug(id){
+  const item = items.find(i => i.id === id);
+  if (!item.inputText || !item.inputText.trim()){
+    alert('Please enter a description or URL first.');
+    return;
+  }
+  const provider = getActiveProvider();
+  const apiKey = getApiKey(provider);
+  if (!apiKey){
+    alert('Please enter & save your API key at the top of the page.');
+    document.getElementById('apikeyInput').focus();
+    return;
+  }
+  await generateSlugCore(item, apiKey, provider);
+  render();
+}
+
+const SLUG_SYSTEM_PROMPT = `You are an SEO assistant for image filenames in travel/property/business articles.
+Your task: turn the input (a stock photo or image description, OR a client website image URL) into ONE SEO-friendly filename slug, AND a short SEO/accessibility-friendly alt text.
+
+STRICT RULES FOR THE SLUG:
+- Output ONLY raw JSON: {"slug":"...","alt_text":"..."}. No markdown, no explanation, no backticks.
+- Slug must be lowercase, hyphen-separated, no spaces, no characters other than a-z 0-9 and -.
+- Drop stopwords (of, in, a, the, while, etc.) and generic filler words that add no meaning (rear view, close up, photo of, image of).
+- Ideal length is 4-8 words — concise but still descriptive and meaningful for SEO.
+- Don't include the file extension, size, resolution, date/year, or internal codes (e.g. LR, HR, short property codes) unless they're a meaningful part of the place name.
+- If the input is a URL (not a sentence description): pull the meaningful place/property name from the URL's folder path (usually already readable), then split any camelCase or abbreviations in the filename (e.g. "StudioExe" -> "studio-executive", "TvLounge" -> "tv-lounge") and combine everything into one slug describing the property + the room/feature shown. Drop redundant codes already represented by the full name (e.g. an initialism like "SCC" when the full name is already present), and drop resolution/year tags (2024, LR, HR, etc).
+
+RULES FOR THE ALT TEXT:
+- Plain English, under 125 characters, natural sentence-like phrase (not just repeating the slug with hyphens).
+- Describe what's actually in the image — don't start with "Image of" or "Photo of" (redundant for screen readers).
+- If the input is a URL with limited context, base the alt text on the property/room name inferred from the URL.
+
+EXAMPLE 1 (stock photo description):
+Input: "rear view of two asian corporate executives discussing business while walking in street in downtown of modern city"
+Output: {"slug":"asian-business-executives-walking-downtown","alt_text":"Two Asian business executives walking and talking in a downtown city street"}
+
+EXAMPLE 2 (client website URL):
+Input: "https://www.discoverasr.com/content/dam/tal/media/images/properties/vietnam/ho-chi-minh-city/somerset-chancellor-court-ho-chi-minh-city/gallery/VN-Ho%20Chi%20Minh%20City-SCC-StudioExe-TvLounge-2024-LR.jpg"
+Output: {"slug":"somerset-chancellor-court-ho-chi-minh-city-studio-executive-tv-lounge","alt_text":"Studio Executive TV lounge at Somerset Chancellor Court, Ho Chi Minh City"}`;
+
+function sleep(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function callAI(provider, apiKey, systemPrompt, userMsg, statusUpdateFn){
+  const maxRetries = 3;
+  let attempt = 0;
+  while (true){
+    let response, data;
+    try {
+      if (provider === 'groq'){
+        response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + apiKey
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            temperature: 0.3,
+            max_tokens: 300,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMsg }
+            ]
+          })
+        });
+      } else {
+        response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true"
+          },
+          body: JSON.stringify({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 300,
+            system: systemPrompt,
+            messages: [{ role: "user", content: userMsg }]
+          })
+        });
+      }
+      data = await response.json();
+    } catch (networkErr){
+      // network-level failure (e.g. offline) — also worth a retry
+      if (attempt < maxRetries){
+        attempt++;
+        const wait = Math.pow(2, attempt) * 1000;
+        if (statusUpdateFn) statusUpdateFn(`Connection issue, retrying in ${wait/1000}s… (${attempt}/${maxRetries})`);
+        await sleep(wait);
+        continue;
+      }
+      throw new Error('Connection failed: ' + networkErr.message);
+    }
+
+    if (response.ok){
+      if (provider === 'groq'){
+        return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+      }
+      return (data.content || []).map(b => b.text || '').join('').trim();
+    }
+
+    const isOverloaded = response.status === 529 || response.status === 429;
+    if (isOverloaded && attempt < maxRetries){
+      attempt++;
+      const wait = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+      if (statusUpdateFn) statusUpdateFn(`Server is busy, retrying in ${wait/1000}s… (${attempt}/${maxRetries})`);
+      await sleep(wait);
+      continue;
+    }
+
+    throw new Error((data.error && data.error.message) || ('HTTP ' + response.status));
+  }
+}
+
+// ---- Robust response parsing (tolerant of chatty non-JSON-only output) ----
+// Same tolerant parsing, but also pulls out alt_text when present.
+// alt_text is optional — callers should fall back gracefully if it's empty.
+function extractSlugAndAlt(rawText){
+  const clean = (rawText || '').replace(/```json|```/g, '').trim();
+  let slug = '', alt = '';
+  try {
+    const parsed = JSON.parse(clean);
+    if (parsed && parsed.slug) slug = parsed.slug;
+    if (parsed && parsed.alt_text) alt = parsed.alt_text;
+  } catch(e){ /* fall through to regex fallback */ }
+  if (!slug){
+    const m = clean.match(/"slug"\s*:\s*"([^"]+)"/i);
+    if (m) slug = m[1];
+  }
+  if (!alt){
+    const m2 = clean.match(/"alt_text"\s*:\s*"([^"]+)"/i);
+    if (m2) alt = m2[1];
+  }
+  if (!slug){
+    const bare = clean.replace(/^["'\s]+|["'\s]+$/g, '');
+    if (bare && !bare.includes('{') && /^[a-z0-9][a-z0-9\-\s]{2,100}$/i.test(bare)) slug = bare;
+  }
+  if (!slug) throw new Error('Unrecognized AI response format');
+  return { slug, alt };
+}
+
+// ---- Hybrid rule-based extraction for client URLs ----
+const GENERIC_PATH_SEGMENTS = ['content','dam','tal','media','images','image','img','gallery','photos','photo','assets','uploads','upload','files','file','wp-content','static','public','properties','property'];
+const NOISE_TOKEN_PATTERNS = [/^(19|20)\d{2}$/, /^(lr|hr|sd|hd|4k|2k|xl|sm|md|xs)$/i, /^[A-Z]{2,5}$/, /^\d+$/];
+
+const NOISE_WORDS = ['gallery','photo','photos','image','images','img','picture','pictures','default','index','asset','assets'];
+
+function extractPropertySlugInfo(urlStr){
+  try {
+    const u = new URL(urlStr);
+    const segments = u.pathname.split('/').map(s => decodeURIComponent(s)).filter(Boolean);
+    const dirs = segments.slice(0, -1); // exclude filename
+    // Candidate = directory segments that aren't purely generic/noise words.
+    const candidates = dirs
+      .map((seg, idx) => ({ seg, idx, hyphens: (seg.match(/-/g) || []).length }))
+      .filter(c => !GENERIC_PATH_SEGMENTS.includes(c.seg.toLowerCase()) && !NOISE_WORDS.includes(c.seg.toLowerCase()) && c.seg.length > 3 && /[a-zA-Z]/.test(c.seg));
+
+    if (!candidates.length) return null;
+
+    // The property/page name is almost always the most hyphen-rich segment
+    // (a compound name), unlike single-word category folders (amenities, rooms, etc).
+    candidates.sort((a, b) => (b.hyphens - a.hyphens) || (b.seg.length - a.seg.length));
+    const winner = candidates[0];
+    const propertySlug = slugify(winner.seg);
+
+    // Any directory segments AFTER the winning folder (closer to the file) are
+    // likely a sub-category (e.g. "amenities") — keep them as extra context tokens
+    // instead of silently dropping them.
+    const categoryTokens = dirs
+      .slice(winner.idx + 1)
+      .filter(seg => !NOISE_WORDS.includes(seg.toLowerCase()) && !GENERIC_PATH_SEGMENTS.includes(seg.toLowerCase()))
+      .flatMap(seg => seg.split(/[-_\s]+/).filter(Boolean));
+
+    return { propertySlug, categoryTokens };
+  } catch(e){ /* not a valid URL, or unexpected structure */ }
+  return null;
+}
+
+function extractFilenameTokens(urlStr, excludeWords){
+  try {
+    const u = new URL(urlStr);
+    const segments = u.pathname.split('/').filter(Boolean);
+    let filename = decodeURIComponent(segments[segments.length - 1] || '');
+    filename = filename.replace(/\.[a-zA-Z0-9]+$/, ''); // strip extension
+    const rawTokens = filename.split(/[-_\s]+/).filter(Boolean);
+    let tokens = [];
+    rawTokens.forEach(t => {
+      const parts = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(' ').filter(Boolean);
+      tokens.push(...parts);
+    });
+    tokens = tokens.filter(t => !NOISE_TOKEN_PATTERNS.some(p => p.test(t)));
+    tokens = tokens.filter(t => !NOISE_WORDS.includes(t.toLowerCase()));
+    const excludeSet = new Set((excludeWords || []).map(w => w.toLowerCase()));
+    tokens = tokens.filter(t => !excludeSet.has(t.toLowerCase()));
+    return tokens;
+  } catch(e){
+    return [];
+  }
+}
+
+const TOKEN_EXPAND_SYSTEM_PROMPT = `You help build an SEO slug and alt text from short filename fragments for a property image.
+Input includes the property/place name for context, plus a list of short words/abbreviations (usually already split from camelCase). Your task:
+- Expand common abbreviations into full words (e.g. "Exe" -> "Executive", "Mgr" -> "Manager", "Apt" -> "Apartment", "Rm" -> "Room").
+- Arrange them into one natural phrase describing the room/feature shown.
+- Also write a short alt text (under 125 characters) combining the property name with what the fragment tokens describe — natural sentence-like phrasing, no "image of"/"photo of".
+- Output ONLY raw JSON: {"slug":"hyphen-separated-words","alt_text":"..."}, lowercase slug, no markdown, no explanation.
+Example: Property: "Somerset Chancellor Court, Ho Chi Minh City". Tokens: ["Studio","Exe","Tv","Lounge"] -> Output: {"slug":"studio-executive-tv-lounge","alt_text":"Studio Executive TV lounge at Somerset Chancellor Court, Ho Chi Minh City"}`;
+
+async function generateSlugCore(item, apiKey, provider){
+  item.status = 'generating';
+  item.errorMsg = '';
+  render();
+
+  const isUrl = item.sourceType === 'url';
+  const rawInput = item.inputText.trim();
+
+  try {
+    if (isUrl){
+      const info = extractPropertySlugInfo(rawInput);
+      if (info){
+        const { propertySlug, categoryTokens } = info;
+        const excludeWords = propertySlug.split('-');
+        const filenameTokens = extractFilenameTokens(rawInput, excludeWords);
+        const tokens = [...categoryTokens.filter(t => !excludeWords.includes(t.toLowerCase())), ...filenameTokens];
+        if (tokens.length === 0){
+          // Rule-based extraction alone was enough, no AI call needed at all.
+          // Build a simple template alt text since there's no AI-written one here.
+          item.slug = slugify(propertySlug);
+          item.altText = humanizeWords(propertySlug);
+          item.status = item.processedBlob ? 'ready' : 'processing';
+        } else {
+          // Hybrid: small, cheap AI call just to expand abbreviations in the leftover tokens.
+          const tokenMsg = `Property: "${humanizeWords(propertySlug)}". Tokens: ${JSON.stringify(tokens)}`;
+          const rawText = await callAI(provider, apiKey, TOKEN_EXPAND_SYSTEM_PROMPT, tokenMsg, (msg) => {
+            item.errorMsg = msg; render();
+          });
+          const { slug: expanded, alt } = extractSlugAndAlt(rawText);
+          item.slug = slugify(propertySlug + '-' + expanded);
+          item.altText = alt || `${humanizeWords(propertySlug)} - ${humanizeWords(expanded)}`;
+          item.status = item.processedBlob ? 'ready' : 'processing';
+        }
+      } else {
+        // Fallback: URL structure not recognized by our rules, use full AI on the whole URL.
+        const userMsg = `Input type: client website image URL.\nURL: ${rawInput}`;
+        const rawText = await callAI(provider, apiKey, SLUG_SYSTEM_PROMPT, userMsg, (msg) => {
+          item.errorMsg = msg; render();
+        });
+        const { slug: slugResult, alt } = extractSlugAndAlt(rawText);
+        item.slug = slugify(slugResult);
+        item.altText = alt;
+        item.status = item.processedBlob ? 'ready' : 'processing';
+      }
+    } else {
+      const userMsg = `Input type: stock photo or image description.\nDescription: ${rawInput}`;
+      const rawText = await callAI(provider, apiKey, SLUG_SYSTEM_PROMPT, userMsg, (msg) => {
+        item.errorMsg = msg; render();
+      });
+      const { slug: slugResult, alt } = extractSlugAndAlt(rawText);
+      item.slug = slugify(slugResult);
+      item.altText = alt;
+      item.status = item.processedBlob ? 'ready' : 'processing';
+    }
+  } catch (err){
+    console.error(err);
+    item.status = 'error';
+    item.errorMsg = 'Failed: ' + err.message;
+  } finally {
+    persistItem(item);
+  }
+}
+
+async function generateAllSlugs(){
+  const provider = getActiveProvider();
+  const apiKey = getApiKey(provider);
+  if (!apiKey){
+    alert('Please enter & save your API key at the top of the page.');
+    document.getElementById('apikeyInput').focus();
+    return;
+  }
+  const targets = items.filter(i => i.inputText && i.inputText.trim() && !i.slug);
+  if (!targets.length){
+    alert('No images need generating (all already have names, or are missing a description/link).');
+    return;
+  }
+  const btn = document.getElementById('generateAllBtn');
+  const statusTxt = document.getElementById('bulkStatusTxt');
+  btn.disabled = true;
+  for (let i = 0; i < targets.length; i++){
+    statusTxt.textContent = `Generating ${i+1}/${targets.length}…`;
+    await generateSlugCore(targets[i], apiKey, provider);
+    render();
+    if (i < targets.length - 1){
+      await sleep(1000); // jeda 1 detik antar request biar gak numpuk sekaligus
+    }
+  }
+  statusTxt.textContent = `Done: ${targets.length} name${targets.length > 1 ? 's' : ''} generated.`;
+  btn.disabled = false;
+  setTimeout(() => { statusTxt.textContent = ''; }, 4000);
+}
+
+let memoryCustomSize = { enabled: false, w: 1200, h: 630 };
+function getCustomSize(){
+  try {
+    return {
+      enabled: localStorage.getItem('sluggify_customsize_on') === 'true',
+      w: parseInt(localStorage.getItem('sluggify_customsize_w'), 10) || 1200,
+      h: parseInt(localStorage.getItem('sluggify_customsize_h'), 10) || 630
+    };
+  } catch(e){ return memoryCustomSize; }
+}
+function setCustomSize({ enabled, w, h }){
+  try {
+    if (enabled !== undefined) localStorage.setItem('sluggify_customsize_on', enabled ? 'true' : 'false');
+    if (w) localStorage.setItem('sluggify_customsize_w', w);
+    if (h) localStorage.setItem('sluggify_customsize_h', h);
+  } catch(e){
+    if (enabled !== undefined) memoryCustomSize.enabled = enabled;
+    if (w) memoryCustomSize.w = w;
+    if (h) memoryCustomSize.h = h;
+  }
+}
+function refreshCustomSizeUI(){
+  const cs = getCustomSize();
+  document.getElementById('customSizeEnabled').checked = cs.enabled;
+  document.getElementById('customSizeLabel').textContent = cs.enabled ? 'On' : 'Off';
+  document.getElementById('customW').value = cs.w;
+  document.getElementById('customH').value = cs.h;
+}
+function onCustomSizeToggle(checked){
+  setCustomSize({ enabled: checked });
+  refreshCustomSizeUI();
+}
+function onCustomSizeChange(){
+  const w = Math.max(10, Math.min(5000, parseInt(document.getElementById('customW').value, 10) || 1200));
+  const h = Math.max(10, Math.min(5000, parseInt(document.getElementById('customH').value, 10) || 630));
+  setCustomSize({ w, h });
+  refreshCustomSizeUI();
+}
+
+function blobToImage(blob){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// Returns [{ name, blob }] for one item — either just the large file,
+// or large + a custom-size extra when that toggle is enabled. The custom
+// size is cropped fresh from the original source image (not scaled from the
+// 1536x700 output) so any aspect ratio works correctly, using the same focal
+// point. Only possible for images still in memory this session.
+async function buildExportFiles(item){
+  const ext = item.format === 'webp' ? '.webp' : '.jpg';
+  const mime = item.format === 'webp' ? 'image/webp' : 'image/jpeg';
+  const base = item.slug || ('untitled-image-' + item.id);
+  const cs = getCustomSize();
+
+  if (!cs.enabled || !item._img){
+    return [{ name: base + ext, blob: item.processedBlob }];
+  }
+
+  const canvas = cropToCanvas(item._img, cs.w, cs.h, item.focalX, item.focalY);
+  const { blob: customBlob } = await compressToTarget(canvas, mime);
+  return [
+    { name: `${base}-${item.targetW}x${item.targetH}${ext}`, blob: item.processedBlob },
+    { name: `${base}-${cs.w}x${cs.h}${ext}`, blob: customBlob }
+  ];
+}
+
+async function downloadSingle(id){
+  const item = items.find(i => i.id === id);
+  if (!item.processedBlob) return;
+
+  const files = await buildExportFiles(item);
+  // Always give direct file downloads for a single image, even when there's
+  // more than one size — no zipping. ZIP is reserved for "Download All" when
+  // handling many images at once, where bundling actually helps.
+  for (let i = 0; i < files.length; i++){
+    const url = URL.createObjectURL(files[i].blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = files[i].name;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    if (i < files.length - 1) await sleep(250); // small gap so the browser doesn't block multiple downloads
+  }
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function openReviewModal(){
+  const ready = items.filter(i => i.processedBlob);
+  if (!ready.length) return;
+  const ext = (item) => item.format === 'webp' ? '.webp' : '.jpg';
+  const rows = ready.map(item => `
+    <tr>
+      <td>${item.thumbDataUrl ? `<img class="rt-thumb" src="${item.thumbDataUrl}">` : ''}</td>
+      <td class="rt-slug">${escapeHtml(item.slug || 'untitled-image')}${ext(item)}</td>
+      <td class="rt-alt">${item.altText ? escapeHtml(item.altText) : '<em>No alt text yet</em>'}</td>
+    </tr>`).join('');
+  document.getElementById('reviewTable').innerHTML = `
+    <thead><tr><th>Image</th><th>Filename</th><th>Alt text</th></tr></thead>
+    <tbody>${rows}</tbody>`;
+  document.getElementById('reviewModal').classList.add('open');
+}
+function closeReviewModal(){
+  document.getElementById('reviewModal').classList.remove('open');
+}
+
+function openZipModal(){
+  const ready = items.filter(i => i.processedBlob);
+  if (!ready.length) return;
+  const input = document.getElementById('zipNameInput');
+  input.value = '';
+  document.getElementById('zipModal').classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+function closeZipModal(){
+  document.getElementById('zipModal').classList.remove('open');
+}
+function confirmDownloadAll(){
+  const raw = document.getElementById('zipNameInput').value.trim();
+  const filename = sanitizeFilename(raw) || 'sluggify-export';
+  closeZipModal();
+  downloadAll(filename);
+}
+
+async function downloadAll(zipFileName){
+  const ready = items.filter(i => i.processedBlob);
+  if (!ready.length) return;
+  const zip = new JSZip();
+  const usedNames = {};
+
+  for (const item of ready){
+    const files = await buildExportFiles(item);
+    files.forEach(f => {
+      let name = f.name;
+      let n = 2;
+      while (usedNames[name]) {
+        name = f.name.replace(/(\.[^.]+)$/, `-${n}$1`);
+        n++;
+      }
+      usedNames[name] = true;
+      zip.file(name, f.blob);
+    });
+  }
+
+  const blob = await zip.generateAsync({type:'blob'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (zipFileName || 'sluggify-export') + '.zip';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+downloadAllBtn.addEventListener('click', openZipModal);
+
+function statusDot(item){
+  if (item.status === 'processing' || item.status === 'generating') return '<span class="dot busy"></span>';
+  if (item.status === 'error') return '<span class="dot err"></span>';
+  if (item.status === 'ready' && item.slug) return '<span class="dot ok"></span>';
+  return '<span class="dot"></span>';
+}
+
+function render(){
+  emptyState.style.display = items.length ? 'none' : 'block';
+  downloadAllBtn.disabled = !items.some(i => i.processedBlob);
+  document.getElementById('reviewAllBtn').disabled = !items.some(i => i.processedBlob);
+  deleteAllBtn.disabled = !items.length;
+  document.getElementById('stickyActionbar').style.display = items.length ? 'flex' : 'none';
+  document.getElementById('stickyCount').textContent = items.length
+    ? `${items.length} image${items.length > 1 ? 's' : ''}`
+    : '';
+  updateQualityDelta();
+
+  list.innerHTML = items.map(item => {
+    const sizeKb = item.processedSize ? (item.processedSize/1024).toFixed(0) + ' KB' : '—';
+    const isGenerating = item.status === 'generating';
+    const placeholder = item.sourceType === 'url'
+      ? 'Paste the image link...'
+      : 'Paste an image description (Shutterstock, Getty, Adobe Stock, or your own words)...';
+
+    return `
+    <div class="card">
+      <div class="tag-edge"></div>
+      <div class="thumb-col">
+        ${item.thumbDataUrl
+          ? `<canvas style="width:100%;height:108px;background-image:url('${item.thumbDataUrl}');background-size:cover;background-position:center;"></canvas>`
+          : `<span class="empty">processing…</span>`}
+        ${item.processedSize ? `<span class="dim-tag">${sizeKb}</span>` : ''}
+      </div>
+      <div class="body-col">
+        <div class="row-top">
+          <span class="orig-name">${item.originalName}</span>
+          <button class="remove-btn" onclick="removeItem('${item.id}')">✕</button>
+        </div>
+
+        ${item.previewDataUrl ? `
+        <button class="crop-toggle-btn" onclick="toggleCropPanel('${item.id}')">🎯 ${item.cropOpen ? 'Close crop adjuster' : 'Adjust crop'}</button>
+        ` : ''}
+        ${item.cropOpen && item.previewDataUrl ? `
+        <div class="crop-panel">
+          <div class="crop-preview-wrap" onclick="setFocalPoint(event, '${item.id}')">
+            <img src="${item.previewDataUrl}" class="crop-preview-img" draggable="false">
+            <div class="crop-crosshair" style="left:${item.focalX}%;top:${item.focalY}%;"></div>
+          </div>
+          <div class="crop-hint">Click on the image to set the focal point that stays in frame when cropped.</div>
+        </div>` : ''}
+
+        <div class="auto-badge" id="badge-${item.id}">${item.sourceType === 'url' ? '🔗 Link Image (auto-detected)' : '📝 Description (auto-detected)'}</div>
+
+        <textarea placeholder="${placeholder}" oninput="updateInputText('${item.id}', this.value)" onblur="render(); persistItem(items.find(i=>i.id==='${item.id}'))">${item.inputText}</textarea>
+
+        <div class="gen-row">
+          <button class="gen-btn" ${isGenerating?'disabled':''} onclick="generateSlug('${item.id}')">
+            ${isGenerating ? '<span class="spin"></span> Generating…' : '✨ Generate Name'}
+          </button>
+        </div>
+
+        ${item.slug ? `
+        <div class="diff-row">
+          <span class="diff-old">${stripExt(item.originalName)}</span>
+          <span class="diff-arrow">→</span>
+          <span class="diff-new">${item.slug}</span>
+        </div>` : ''}
+
+        <div class="slug-row">
+          <input type="text" value="${item.slug}" placeholder="auto-generated-seo-filename" oninput="updateSlug('${item.id}', this.value)">
+          <span class="ext-tag">${item.format === 'webp' ? '.webp' : '.jpg'}</span>
+        </div>
+
+        ${item.slug ? `
+        <div class="alt-row">
+          <span class="alt-label">ALT TEXT</span>
+          <textarea class="alt-input" placeholder="Image alt text..." oninput="updateAltText('${item.id}', this.value)">${item.altText || ''}</textarea>
+          <button class="copy-btn" id="copyBtn-${item.id}" onclick="copyAltText('${item.id}')">Copy</button>
+        </div>` : ''}
+
+        <div class="meta-row">
+          <div class="status">${statusDot(item)} ${
+            item.status === 'error' ? item.errorMsg :
+            item.status === 'processing' ? 'Resizing 1536×700…' :
+            item.status === 'generating' ? (item.errorMsg || 'Calling AI…') :
+            item.slug ? 'Ready to download' : 'No filename yet'
+          }</div>
+          <button class="dl-single" ${!item.processedBlob?'disabled':''} onclick="downloadSingle('${item.id}')">⇩ Download</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+refreshApiKeyBar();
+refreshFormatToggle();
+refreshCustomSizeUI();
+refreshPrimarySizeUI();
+refreshQualityUI();
+render();
+restoreSession();
+</script>
+</body>
+</html>
