@@ -6,6 +6,15 @@
 <title>SEO Image Renamer, Resizer & Alt Text Generator - Sluggify</title>
 <meta name="description" content="Resize images, generate SEO-friendly filenames, and write alt text automatically. Free AI tool that runs entirely in your browser. No uploads to any server.">
 <meta name="robots" content="index, follow">
+<link rel="canonical" href="https://sluggify.imageresizer.workers.dev/">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2314161A'/%3E%3Ctext x='50' y='68' font-family='monospace' font-size='58' font-weight='700' fill='%234FD98B' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Sluggify — SEO Image Renamer, Resizer & Alt Text Generator">
+<meta property="og:description" content="Resize images, generate SEO-friendly filenames, and write alt text automatically. Free AI tool that runs entirely in your browser. No uploads to any server.">
+<meta property="og:url" content="https://sluggify.imageresizer.workers.dev/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Sluggify — SEO Image Renamer, Resizer & Alt Text Generator">
+<meta name="twitter:description" content="Resize images, generate SEO-friendly filenames, and write alt text automatically. Free AI tool that runs entirely in your browser.">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -28,7 +37,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
     --bg: #14161A;
@@ -318,6 +326,24 @@
   .review-table .rt-thumb{width:48px;height:28px;object-fit:cover;border-radius:4px;display:block;}
   .review-table .rt-slug{font-family:'Geist Mono',monospace;color:var(--green);word-break:break-all;}
   .review-table .rt-alt{color:var(--text-dim);}
+
+  /* ---- Mobile / narrow viewport adjustments ---- */
+  @media (max-width: 640px){
+    .wrap{padding:20px 14px 60px;}
+    header{align-items:flex-start;}
+    .brand h1{font-size:22px;}
+    .settings{gap:10px;padding:10px 12px;}
+    .card{flex-direction:column;}
+    .tag-edge{display:none;}
+    .thumb-col{width:100%;height:160px;}
+    .thumb-col canvas{height:160px;}
+    .sticky-actionbar{position:static;}
+    .sticky-actionbar-buttons{width:100%;}
+    .sticky-actionbar-buttons button{flex:1;justify-content:center;}
+    .alt-row{flex-direction:column;align-items:stretch;}
+    .alt-label{width:auto;padding-top:0;}
+    .modal-box{max-width:100%;}
+  }
 </style>
 </head>
 <body>
@@ -331,17 +357,17 @@
   </header>
 
   <div class="settings">
-    <span>Size:</span>
-    <select id="primarySizePreset" class="size-select" onchange="onPrimaryPresetChange()">
+    <span id="sizeLabel">Size:</span>
+    <select id="primarySizePreset" class="size-select" aria-labelledby="sizeLabel" onchange="onPrimaryPresetChange()">
       <option value="wide">Wide (1536×700)</option>
       <option value="square">Square (1080×1080)</option>
       <option value="4:3">4:3 (1200×900)</option>
       <option value="16:9">16:9 (1280×720)</option>
       <option value="custom">Custom…</option>
     </select>
-    <input type="number" id="primaryCustomW" class="size-input" placeholder="W" min="10" max="5000" onchange="onPrimaryCustomChange()" style="display:none;">
+    <input type="number" id="primaryCustomW" class="size-input" aria-label="Custom width in pixels" placeholder="W" min="10" max="5000" onchange="onPrimaryCustomChange()" style="display:none;">
     <span id="primaryCustomX" style="color:var(--text-dim);display:none;">×</span>
-    <input type="number" id="primaryCustomH" class="size-input" placeholder="H" min="10" max="5000" onchange="onPrimaryCustomChange()" style="display:none;">
+    <input type="number" id="primaryCustomH" class="size-input" aria-label="Custom height in pixels" placeholder="H" min="10" max="5000" onchange="onPrimaryCustomChange()" style="display:none;">
     <div class="divider"></div>
     <span>Format:</span>
     <div class="toggle" id="formatToggle" style="margin:0;">
@@ -370,7 +396,7 @@
       <button id="providerBtnAnthropic" onclick="setProvider('anthropic')">Anthropic (Paid)</button>
     </div>
     <span class="label" id="apikeyLabel">🔑 Groq API Key</span>
-    <input type="password" id="apikeyInput" placeholder="gsk_...">
+    <input type="password" id="apikeyInput" aria-labelledby="apikeyLabel" placeholder="gsk_...">
     <button class="save-btn" onclick="saveApiKey()">Save</button>
     <span class="status-txt" id="apikeyStatus"></span>
     <span class="label" id="apikeyLink">· Don't have one? <a href="https://console.groq.com/keys" target="_blank">Create one free</a></span>
@@ -424,11 +450,11 @@
   <footer><a href="mailto:regaaljundi@gmail.com">Send feedback</a></footer>
 </div>
 
-<div class="modal-overlay" id="zipModal">
+<div class="modal-overlay" id="zipModal" role="dialog" aria-modal="true" aria-labelledby="zipModalTitle">
   <div class="modal-box">
-    <h3>ZIP file name</h3>
+    <h3 id="zipModalTitle">ZIP file name</h3>
     <p>Choose a name for your ZIP file before downloading.</p>
-    <input type="text" id="zipNameInput" placeholder="e.g. somerset-chancellor-court">
+    <input type="text" id="zipNameInput" aria-label="ZIP file name" placeholder="e.g. somerset-chancellor-court">
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeZipModal()">Cancel</button>
       <button class="btn-primary" onclick="confirmDownloadAll()">⇩ Download ZIP</button>
@@ -436,15 +462,26 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="reviewModal">
+<div class="modal-overlay" id="reviewModal" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
   <div class="modal-box review-box">
-    <h3>Review before you download</h3>
+    <h3 id="reviewModalTitle">Review before you download</h3>
     <p>A quick look at every filename and alt text, all in one place.</p>
     <div class="review-table-wrap">
       <table class="review-table" id="reviewTable"></table>
     </div>
     <div class="modal-actions">
       <button class="btn-primary" onclick="closeReviewModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+  <div class="modal-box">
+    <h3 id="confirmModalTitle">Are you sure?</h3>
+    <p id="confirmModalMsg"></p>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeConfirmModal(false)">Cancel</button>
+      <button class="btn-primary" id="confirmModalYesBtn" onclick="closeConfirmModal(true)">Confirm</button>
     </div>
   </div>
 </div>
@@ -543,6 +580,8 @@ function refreshQualityUI(){
   const isManual = q.mode === 'manual';
   document.getElementById('qualityBtnAuto').classList.toggle('active', !isManual);
   document.getElementById('qualityBtnManual').classList.toggle('active', isManual);
+  document.getElementById('qualityBtnAuto').setAttribute('aria-pressed', !isManual ? 'true' : 'false');
+  document.getElementById('qualityBtnManual').setAttribute('aria-pressed', isManual ? 'true' : 'false');
   document.getElementById('stickyQualityWrap').style.display = isManual ? 'flex' : 'none';
   document.getElementById('qualitySlider').value = q.quality;
   document.getElementById('qualitySliderValue').textContent = q.quality;
@@ -572,8 +611,12 @@ function setExportFormat(fmt){
 }
 function refreshFormatToggle(){
   const fmt = getExportFormat();
-  document.getElementById('formatBtnJpg').classList.toggle('active', fmt === 'jpg');
-  document.getElementById('formatBtnWebp').classList.toggle('active', fmt === 'webp');
+  const jpgBtn = document.getElementById('formatBtnJpg');
+  const webpBtn = document.getElementById('formatBtnWebp');
+  jpgBtn.classList.toggle('active', fmt === 'jpg');
+  webpBtn.classList.toggle('active', fmt === 'webp');
+  jpgBtn.setAttribute('aria-pressed', fmt === 'jpg' ? 'true' : 'false');
+  webpBtn.setAttribute('aria-pressed', fmt === 'webp' ? 'true' : 'false');
 }
 function currentMime(){
   return getExportFormat() === 'webp' ? 'image/webp' : 'image/jpeg';
@@ -608,7 +651,7 @@ function setProvider(p){
 }
 function saveApiKey(){
   const val = document.getElementById('apikeyInput').value.trim();
-  if (!val){ alert('Please enter an API key first.'); return; }
+  if (!val){ showToast('Please enter an API key first.'); document.getElementById('apikeyInput').focus(); return; }
   setApiKey(getActiveProvider(), val);
   refreshApiKeyBar();
 }
@@ -625,6 +668,8 @@ function refreshApiKeyBar(){
 
   btnGroq.classList.toggle('active', provider === 'groq');
   btnAnthropic.classList.toggle('active', provider === 'anthropic');
+  btnGroq.setAttribute('aria-pressed', provider === 'groq' ? 'true' : 'false');
+  btnAnthropic.setAttribute('aria-pressed', provider === 'anthropic' ? 'true' : 'false');
 
   if (provider === 'groq'){
     label.textContent = '🔑 Groq API Key';
@@ -657,11 +702,39 @@ const deleteAllBtn = document.getElementById('deleteAllBtn');
 
 deleteAllBtn.addEventListener('click', () => {
   if (!items.length) return;
-  if (confirm("Delete all images from the list? Files you've already downloaded won't be affected. This only clears the list.")) {
+  showConfirmModal("Delete all images from the list? Files you've already downloaded won't be affected. This only clears the list.", (confirmed) => {
+    if (!confirmed) return;
     items = [];
     clearAllFromDB();
     render();
-  }
+  });
+});
+
+// ---- Custom confirm modal (replaces native confirm()) ----
+let _confirmCallback = null;
+let _lastFocusedBeforeModal = null;
+function showConfirmModal(message, onResult){
+  _confirmCallback = onResult;
+  _lastFocusedBeforeModal = document.activeElement;
+  document.getElementById('confirmModalMsg').textContent = message;
+  const modal = document.getElementById('confirmModal');
+  modal.classList.add('open');
+  document.getElementById('confirmModalYesBtn').focus();
+}
+function closeConfirmModal(result){
+  document.getElementById('confirmModal').classList.remove('open');
+  const cb = _confirmCallback;
+  _confirmCallback = null;
+  if (_lastFocusedBeforeModal){ _lastFocusedBeforeModal.focus(); _lastFocusedBeforeModal = null; }
+  if (cb) cb(result);
+}
+
+// ---- Escape key closes whichever modal is currently open ----
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('zipModal').classList.contains('open')) closeZipModal();
+  else if (document.getElementById('reviewModal').classList.contains('open')) closeReviewModal();
+  else if (document.getElementById('confirmModal').classList.contains('open')) closeConfirmModal(false);
 });
 
 dropzone.addEventListener('click', () => fileInput.click());
@@ -673,8 +746,23 @@ dropzone.addEventListener('drop', e => {
 });
 fileInput.addEventListener('change', e => handleFiles(e.target.files));
 
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25MB — very large originals can make the tab slow/heavy
+const UNSUPPORTED_TYPES = ['image/heic', 'image/heif']; // not reliably decodable by <canvas> in most browsers
+
 function handleFiles(fileList){
-  [...fileList].filter(f => f.type.startsWith('image/')).forEach(addImage);
+  const files = [...fileList].filter(f => f.type.startsWith('image/'));
+  const tooBig = files.filter(f => f.size > MAX_UPLOAD_BYTES);
+  const unsupported = files.filter(f => UNSUPPORTED_TYPES.includes(f.type));
+  const usable = files.filter(f => f.size <= MAX_UPLOAD_BYTES && !UNSUPPORTED_TYPES.includes(f.type));
+
+  if (unsupported.length){
+    showToast(`Skipped ${unsupported.length} file(s): HEIC/HEIF photos aren't supported by most browsers. Export as JPG first.`);
+  }
+  if (tooBig.length){
+    showToast(`Skipped ${tooBig.length} file(s) over 25MB — too large to process smoothly in the browser.`);
+  }
+
+  usable.forEach(addImage);
   render();
 }
 
@@ -1041,13 +1129,15 @@ function setFocalPoint(event, id){
 async function generateSlug(id){
   const item = items.find(i => i.id === id);
   if (!item.inputText || !item.inputText.trim()){
-    alert('Please enter a description or URL first.');
+    showToast('Please enter a description or URL first.');
+    const el = document.getElementById('desc-' + id);
+    if (el) el.focus();
     return;
   }
   const provider = getActiveProvider();
   const apiKey = getApiKey(provider);
   if (!apiKey){
-    alert('Please enter & save your API key at the top of the page.');
+    showToast('Please enter & save your API key at the top of the page.');
     document.getElementById('apikeyInput').focus();
     return;
   }
@@ -1152,7 +1242,11 @@ async function callAI(provider, apiKey, systemPrompt, userMsg, statusUpdateFn){
       continue;
     }
 
-    throw new Error((data.error && data.error.message) || ('HTTP ' + response.status));
+    if (response.status === 401 || response.status === 403){
+      throw new Error('API key rejected — double-check it\'s correct and saved for the right provider (Groq vs Anthropic).');
+    }
+
+    throw new Error((data && data.error && data.error.message) || ('HTTP ' + response.status));
   }
 }
 
@@ -1317,13 +1411,13 @@ async function generateAllSlugs(){
   const provider = getActiveProvider();
   const apiKey = getApiKey(provider);
   if (!apiKey){
-    alert('Please enter & save your API key at the top of the page.');
+    showToast('Please enter & save your API key at the top of the page.');
     document.getElementById('apikeyInput').focus();
     return;
   }
   const targets = items.filter(i => i.inputText && i.inputText.trim() && !i.slug);
   if (!targets.length){
-    alert('No images need generating (all already have names, or are missing a description/link).');
+    showToast('No images need generating (all already have names, or are missing a description/link).');
     return;
   }
   const btn = document.getElementById('generateAllBtn');
@@ -1441,32 +1535,40 @@ function escapeHtml(str){
 function openReviewModal(){
   const ready = items.filter(i => i.processedBlob);
   if (!ready.length) return;
+  _lastFocusedBeforeModal = document.activeElement;
   const ext = (item) => item.format === 'webp' ? '.webp' : '.jpg';
   const rows = ready.map(item => `
     <tr>
-      <td>${item.thumbDataUrl ? `<img class="rt-thumb" src="${item.thumbDataUrl}">` : ''}</td>
+      <td>${item.thumbDataUrl ? `<img class="rt-thumb" src="${item.thumbDataUrl}" alt="Thumbnail preview of ${escapeHtml(item.slug || item.originalName)}">` : ''}</td>
       <td class="rt-slug">${escapeHtml(item.slug || 'untitled-image')}${ext(item)}</td>
       <td class="rt-alt">${item.altText ? escapeHtml(item.altText) : '<em>No alt text yet</em>'}</td>
     </tr>`).join('');
   document.getElementById('reviewTable').innerHTML = `
     <thead><tr><th>Image</th><th>Filename</th><th>Alt text</th></tr></thead>
     <tbody>${rows}</tbody>`;
-  document.getElementById('reviewModal').classList.add('open');
+  const modal = document.getElementById('reviewModal');
+  modal.classList.add('open');
+  setTimeout(() => { const btn = modal.querySelector('.btn-primary'); if (btn) btn.focus(); }, 50);
 }
 function closeReviewModal(){
   document.getElementById('reviewModal').classList.remove('open');
+  if (_lastFocusedBeforeModal){ _lastFocusedBeforeModal.focus(); _lastFocusedBeforeModal = null; }
 }
 
 function openZipModal(){
   const ready = items.filter(i => i.processedBlob);
   if (!ready.length) return;
+  _lastFocusedBeforeModal = document.activeElement;
   const input = document.getElementById('zipNameInput');
-  input.value = '';
+  // Pre-fill with the first ready item's slug so there's a sensible default
+  // instead of forcing the person to type a name from scratch every time.
+  input.value = (ready[0] && ready[0].slug) ? ready[0].slug : '';
   document.getElementById('zipModal').classList.add('open');
-  setTimeout(() => input.focus(), 50);
+  setTimeout(() => { input.focus(); input.select(); }, 50);
 }
 function closeZipModal(){
   document.getElementById('zipModal').classList.remove('open');
+  if (_lastFocusedBeforeModal){ _lastFocusedBeforeModal.focus(); _lastFocusedBeforeModal = null; }
 }
 function confirmDownloadAll(){
   const raw = document.getElementById('zipNameInput').value.trim();
@@ -1475,9 +1577,32 @@ function confirmDownloadAll(){
   downloadAll(filename);
 }
 
+// JSZip is only needed for "Download All" — load it on first use instead of
+// on every page load, so people who only ever download single images don't
+// pay for it.
+let _jsZipLoadPromise = null;
+function loadJSZip(){
+  if (window.JSZip) return Promise.resolve();
+  if (_jsZipLoadPromise) return _jsZipLoadPromise;
+  _jsZipLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Failed to load ZIP library — check your connection.'));
+    document.head.appendChild(script);
+  });
+  return _jsZipLoadPromise;
+}
+
 async function downloadAll(zipFileName){
   const ready = items.filter(i => i.processedBlob);
   if (!ready.length) return;
+  try {
+    await loadJSZip();
+  } catch(e){
+    showToast(e.message);
+    return;
+  }
   const zip = new JSZip();
   const usedNames = {};
 
@@ -1513,6 +1638,20 @@ function statusDot(item){
 }
 
 function render(){
+  // Preserve focus + cursor/selection across re-render. Without this, a
+  // background event (e.g. another image finishing processing) rebuilds the
+  // whole list and can yank focus away from a textarea the person is
+  // actively typing into.
+  const activeEl = document.activeElement;
+  let focusInfo = null;
+  if (activeEl && activeEl.id && list.contains(activeEl)){
+    focusInfo = {
+      id: activeEl.id,
+      selStart: typeof activeEl.selectionStart === 'number' ? activeEl.selectionStart : null,
+      selEnd: typeof activeEl.selectionEnd === 'number' ? activeEl.selectionEnd : null
+    };
+  }
+
   emptyState.style.display = items.length ? 'none' : 'block';
   downloadAllBtn.disabled = !items.some(i => i.processedBlob);
   document.getElementById('reviewAllBtn').disabled = !items.some(i => i.processedBlob);
@@ -1541,17 +1680,19 @@ function render(){
       </div>
       <div class="body-col">
         <div class="row-top">
-          <span class="orig-name">${item.originalName}</span>
-          <button class="remove-btn" onclick="removeItem('${item.id}')">✕</button>
+          <span class="orig-name">${escapeHtml(item.originalName)}</span>
+          <button class="remove-btn" aria-label="Remove ${escapeHtml(item.originalName)} from list" onclick="removeItem('${item.id}')">✕</button>
         </div>
 
         ${item.previewDataUrl ? `
-        <button class="crop-toggle-btn" onclick="toggleCropPanel('${item.id}')">🎯 ${item.cropOpen ? 'Close crop adjuster' : 'Adjust crop'}</button>
-        ` : ''}
+        <button class="crop-toggle-btn" aria-expanded="${item.cropOpen ? 'true' : 'false'}" onclick="toggleCropPanel('${item.id}')">🎯 ${item.cropOpen ? 'Close crop adjuster' : 'Adjust crop'}</button>
+        ` : (item.status !== 'processing' && item.status !== 'idle' ? `
+        <div class="crop-hint">Re-upload this image to adjust its crop (not available after a page refresh).</div>
+        ` : '')}
         ${item.cropOpen && item.previewDataUrl ? `
         <div class="crop-panel">
-          <div class="crop-preview-wrap" onclick="setFocalPoint(event, '${item.id}')">
-            <img src="${item.previewDataUrl}" class="crop-preview-img" draggable="false">
+          <div class="crop-preview-wrap" onclick="setFocalPoint(event, '${item.id}')" role="button" tabindex="0" aria-label="Click to set focal point for cropping">
+            <img src="${item.previewDataUrl}" class="crop-preview-img" draggable="false" alt="Uncropped preview of ${escapeHtml(item.originalName)}">
             <div class="crop-crosshair" style="left:${item.focalX}%;top:${item.focalY}%;"></div>
           </div>
           <div class="crop-hint">Click on the image to set the focal point that stays in frame when cropped.</div>
@@ -1559,7 +1700,7 @@ function render(){
 
         <div class="auto-badge" id="badge-${item.id}">${item.sourceType === 'url' ? '🔗 Link Image (auto-detected)' : '📝 Description (auto-detected)'}</div>
 
-        <textarea placeholder="${placeholder}" oninput="updateInputText('${item.id}', this.value)" onblur="render(); persistItem(items.find(i=>i.id==='${item.id}'))">${item.inputText}</textarea>
+        <textarea id="desc-${item.id}" aria-label="Image description or URL" placeholder="${placeholder}" oninput="updateInputText('${item.id}', this.value)" onblur="render(); persistItem(items.find(i=>i.id==='${item.id}'))">${escapeHtml(item.inputText)}</textarea>
 
         <div class="gen-row">
           <button class="gen-btn" ${isGenerating?'disabled':''} onclick="generateSlug('${item.id}')">
@@ -1569,20 +1710,20 @@ function render(){
 
         ${item.slug ? `
         <div class="diff-row">
-          <span class="diff-old">${stripExt(item.originalName)}</span>
+          <span class="diff-old">${escapeHtml(stripExt(item.originalName))}</span>
           <span class="diff-arrow">→</span>
-          <span class="diff-new">${item.slug}</span>
+          <span class="diff-new">${escapeHtml(item.slug)}</span>
         </div>` : ''}
 
         <div class="slug-row">
-          <input type="text" value="${item.slug}" placeholder="auto-generated-seo-filename" oninput="updateSlug('${item.id}', this.value)">
+          <input type="text" id="slug-${item.id}" aria-label="SEO filename" value="${escapeHtml(item.slug)}" placeholder="auto-generated-seo-filename" oninput="updateSlug('${item.id}', this.value)">
           <span class="ext-tag">${item.format === 'webp' ? '.webp' : '.jpg'}</span>
         </div>
 
         ${item.slug ? `
         <div class="alt-row">
-          <span class="alt-label">ALT TEXT</span>
-          <textarea class="alt-input" placeholder="Image alt text..." oninput="updateAltText('${item.id}', this.value)">${item.altText || ''}</textarea>
+          <span class="alt-label" id="altlabel-${item.id}">ALT TEXT</span>
+          <textarea class="alt-input" id="alt-${item.id}" aria-labelledby="altlabel-${item.id}" placeholder="Image alt text..." oninput="updateAltText('${item.id}', this.value)">${escapeHtml(item.altText || '')}</textarea>
           <button class="copy-btn" id="copyBtn-${item.id}" onclick="copyAltText('${item.id}')">Copy</button>
         </div>` : ''}
 
@@ -1598,6 +1739,16 @@ function render(){
       </div>
     </div>`;
   }).join('');
+
+  if (focusInfo){
+    const el = document.getElementById(focusInfo.id);
+    if (el){
+      el.focus();
+      if (focusInfo.selStart != null && typeof el.setSelectionRange === 'function'){
+        try { el.setSelectionRange(focusInfo.selStart, focusInfo.selEnd); } catch(e){ /* not a text-selectable input */ }
+      }
+    }
+  }
 }
 
 refreshApiKeyBar();

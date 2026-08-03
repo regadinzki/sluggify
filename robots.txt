@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://sluggify.pages.dev/sitemap.xml
+Sitemap: https://sluggify.imageresizer.workers.dev/sitemap.xml
