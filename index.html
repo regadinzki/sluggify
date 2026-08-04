@@ -113,6 +113,7 @@
     font-size:12.5px;color:var(--text-dim);
   }
   .settings b{color:var(--text);font-weight:600;}
+  .step-label{font-size:10.5px;font-weight:600;color:var(--green);letter-spacing:.04em;margin:0 0 6px;font-family:'Geist Mono',monospace;}
   .settings .divider{width:1px;height:14px;background:var(--card-border);}
   .custom-size-check{display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-dim);}
   .custom-size-check input{cursor:pointer;}
@@ -236,7 +237,7 @@
   }
   textarea{min-height:44px;}
   textarea:focus, input[type=text]:focus{border-color:var(--accent-dim);}
-  textarea::placeholder, input::placeholder{color:#565C66;}
+  textarea::placeholder, input::placeholder{color:#8B9099;}
 
   .gen-row{display:flex;gap:8px;align-items:center;}
   .gen-btn{
@@ -300,14 +301,14 @@
   .about-copy code{font-family:'Geist Mono',monospace;background:var(--bg-soft);border:1px solid var(--card-border);border-radius:4px;padding:1px 5px;font-size:12px;color:var(--text);}
   .about-copy a{color:var(--accent);}
 
-  footer{margin-top:30px;text-align:center;color:#565C66;font-size:11px;font-family:'Geist Mono',monospace;}
-  footer a{color:#565C66;text-decoration:underline;}
-  footer a:hover{color:var(--text-dim);}
+  footer{margin-top:30px;text-align:center;color:#8B9099;font-size:11px;font-family:'Geist Mono',monospace;}
+  footer a{color:#8B9099;text-decoration:underline;}
+  footer a:hover{color:var(--text);}
   .footer-copy-btn{
-    background:none;border:none;color:#565C66;text-decoration:underline;
+    background:none;border:none;color:#8B9099;text-decoration:underline;
     font-family:inherit;font-size:11px;padding:0;
   }
-  .footer-copy-btn:hover{color:var(--text-dim);}
+  .footer-copy-btn:hover{color:var(--text);}
   .footer-copy-btn.copied{color:var(--green);text-decoration:none;}
 
   .apikey-bar{
@@ -389,6 +390,7 @@
     </div>
   </header>
 
+  <div class="step-label">Step 1 · Choose output size &amp; format</div>
   <div class="settings">
     <span id="sizeLabel">Size:</span>
     <select id="primarySizePreset" class="size-select" aria-labelledby="sizeLabel" onchange="onPrimaryPresetChange()">
@@ -426,6 +428,7 @@
     <span>Filenames from <b>AI</b> (description / URL)</span>
   </div>
 
+  <div class="step-label">Step 2 · Add an AI key (optional)</div>
   <div class="apikey-bar" id="apikeyBar">
     <div class="apikey-hint" id="apikeyHint">This uses a free AI service to write SEO filenames &amp; alt text. Setup takes about 30 seconds, no credit card needed.</div>
     <div class="apikey-row">
@@ -444,6 +447,7 @@
     </div>
   </div>
 
+  <div class="step-label">Step 3 · Upload your images</div>
   <div class="dropzone" id="dropzone">
     <div class="icon">🎞️</div>
     <div class="title">Drag images here, or click to select files</div>
