@@ -206,7 +206,7 @@
     transition:filter .15s;
   }
   .crop-done-btn:hover{filter:brightness(1.15);}
-  .crop-preview-wrap{position:relative;width:100%;cursor:crosshair;border-radius:6px;overflow:hidden;line-height:0;}
+  .crop-preview-wrap{position:relative;width:100%;cursor:crosshair;border-radius:6px;overflow:hidden;line-height:0;touch-action:none;}
   .crop-preview-img{width:100%;display:block;pointer-events:none;user-select:none;}
   .crop-crosshair{
     position:absolute;width:22px;height:22px;transform:translate(-50%,-50%);
@@ -402,15 +402,18 @@
   </div>
 
   <div class="settings">
-    <span>Extra size:</span>
-    <label class="custom-size-check">
-      <input type="checkbox" id="customSizeEnabled" onchange="onCustomSizeToggle(this.checked)">
-      <span id="customSizeLabel">Off</span>
-    </label>
-    <input type="number" id="customW" class="size-input" placeholder="W" min="10" max="5000" onchange="onCustomSizeChange()">
-    <span style="color:var(--text-dim);">×</span>
-    <input type="number" id="customH" class="size-input" placeholder="H" min="10" max="5000" onchange="onCustomSizeChange()">
-    <span style="color:var(--text-dim);">px</span>
+    <button class="provider-switch-link" id="extraSizeToggleLink" onclick="toggleExtraSizeSettings()">+ Add a second export size</button>
+    <div class="apikey-row" id="extraSizeFields" style="display:none;">
+      <span>Extra size:</span>
+      <label class="custom-size-check">
+        <input type="checkbox" id="customSizeEnabled" onchange="onCustomSizeToggle(this.checked)">
+        <span id="customSizeLabel">Off</span>
+      </label>
+      <input type="number" id="customW" class="size-input" placeholder="W" min="10" max="5000" onchange="onCustomSizeChange()">
+      <span style="color:var(--text-dim);">×</span>
+      <input type="number" id="customH" class="size-input" placeholder="H" min="10" max="5000" onchange="onCustomSizeChange()">
+      <span style="color:var(--text-dim);">px</span>
+    </div>
     <div class="divider"></div>
     <span>Filenames from <b>AI</b> (description / URL)</span>
   </div>
@@ -436,7 +439,7 @@
   <div class="dropzone" id="dropzone">
     <div class="icon">🎞️</div>
     <div class="title">Drag images here, or click to select files</div>
-    <div class="sub">Multiple files supported · JPG / PNG / WEBP · Resizes instantly, no signup needed</div>
+    <div class="sub">Multiple files supported · JPG / PNG / WEBP · Or paste with Cmd/Ctrl+V · Resizes instantly, no signup needed</div>
     <input type="file" id="fileInput" multiple accept="image/*">
   </div>
 
@@ -457,6 +460,7 @@
       </div>
     </div>
     <div class="sticky-actionbar-buttons">
+      <button class="btn-ghost" id="bulkPasteBtn" onclick="openBulkPasteModal()">📋 Paste List</button>
       <button class="gen-btn" id="generateAllBtn" onclick="generateAllSlugs()">✨ Generate All Names</button>
       <button class="btn-ghost" id="reviewAllBtn" disabled onclick="openReviewModal()">📋 Review All</button>
       <button class="btn-ghost" id="deleteAllBtn" disabled>🗑 Delete All</button>
@@ -521,6 +525,21 @@
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeConfirmModal(false)">Cancel</button>
       <button class="btn-primary" id="confirmModalYesBtn" onclick="closeConfirmModal(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bulkPasteModal" role="dialog" aria-modal="true" aria-labelledby="bulkPasteModalTitle">
+  <div class="modal-box review-box">
+    <h3 id="bulkPasteModalTitle">Paste multiple descriptions or links</h3>
+    <p>One line per image, in the same order as your uploaded images below. Check the matches before applying.</p>
+    <textarea id="bulkPasteInput" aria-label="Multiple descriptions or links, one per line" placeholder="https://example.com/gallery/image-1.jpg&#10;https://example.com/gallery/image-2.jpg" style="min-height:110px;margin-bottom:12px;" oninput="updateBulkPastePreview()"></textarea>
+    <div class="review-table-wrap" id="bulkPastePreviewWrap" style="display:none;">
+      <table class="review-table" id="bulkPastePreviewTable"></table>
+    </div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn-ghost" onclick="closeBulkPasteModal()">Cancel</button>
+      <button class="btn-primary" id="bulkPasteApplyBtn" onclick="applyBulkPaste()" disabled>Apply</button>
     </div>
   </div>
 </div>
@@ -851,6 +870,7 @@ document.addEventListener('keydown', (e) => {
   if (document.getElementById('zipModal').classList.contains('open')) closeZipModal();
   else if (document.getElementById('reviewModal').classList.contains('open')) closeReviewModal();
   else if (document.getElementById('confirmModal').classList.contains('open')) closeConfirmModal(false);
+  else if (document.getElementById('bulkPasteModal').classList.contains('open')) closeBulkPasteModal();
 });
 
 dropzone.addEventListener('click', () => fileInput.click());
@@ -861,6 +881,24 @@ dropzone.addEventListener('drop', e => {
   handleFiles(e.dataTransfer.files);
 });
 fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+// Paste an image directly from the clipboard (Cmd/Ctrl+V) anywhere on the
+// page. Only intercepts when the clipboard actually contains image data, so
+// normal text pasting into the description/alt-text fields is unaffected.
+document.addEventListener('paste', (e) => {
+  const dtItems = (e.clipboardData && e.clipboardData.items) || [];
+  const imageFiles = [];
+  for (const it of dtItems){
+    if (it.kind === 'file' && it.type.startsWith('image/')){
+      const file = it.getAsFile();
+      if (file) imageFiles.push(file);
+    }
+  }
+  if (!imageFiles.length) return;
+  e.preventDefault();
+  handleFiles(imageFiles);
+  showToast(`Pasted ${imageFiles.length} image${imageFiles.length === 1 ? '' : 's'}.`);
+});
 
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25MB — very large originals can make the tab slow/heavy
 const UNSUPPORTED_TYPES = ['image/heic', 'image/heif']; // not reliably decodable by <canvas> in most browsers
@@ -953,18 +991,43 @@ async function loadSessionFromDB(){
   } catch(e){ return []; }
 }
 
-function showToast(msg){
+function getToastEl(){
   let toast = document.getElementById('goPublishToast');
   if (!toast){
     toast = document.createElement('div');
     toast.id = 'goPublishToast';
-    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1E2126;border:1px solid #2B2F36;color:#4FD98B;font-family:Geist,sans-serif;font-size:12.5px;padding:10px 18px;border-radius:20px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.4);';
+    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1E2126;border:1px solid #2B2F36;color:#4FD98B;font-family:Geist,sans-serif;font-size:12.5px;padding:10px 18px;border-radius:20px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.4);display:flex;align-items:center;gap:10px;';
     document.body.appendChild(toast);
   }
-  toast.textContent = msg;
-  toast.style.display = 'block';
+  return toast;
+}
+function showToast(msg){
+  const toast = getToastEl();
+  toast.innerHTML = '';
+  toast.appendChild(document.createTextNode(msg));
+  toast.style.display = 'flex';
   clearTimeout(toast._hideTimer);
   toast._hideTimer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+// Same toast, but with an inline "Undo" action — used for single-image
+// delete so removing an image stays a single click (no confirm dialog in
+// the way) while still giving a few seconds to recover from a mis-click.
+function showUndoToast(msg, onUndo){
+  const toast = getToastEl();
+  toast.innerHTML = '';
+  toast.appendChild(document.createTextNode(msg));
+  const undoBtn = document.createElement('button');
+  undoBtn.textContent = 'Undo';
+  undoBtn.style.cssText = 'background:none;border:1px solid #2E7A56;color:#4FD98B;font-weight:600;cursor:pointer;font-family:inherit;font-size:12px;padding:3px 10px;border-radius:12px;flex-shrink:0;';
+  undoBtn.onclick = () => {
+    toast.style.display = 'none';
+    clearTimeout(toast._hideTimer);
+    onUndo();
+  };
+  toast.appendChild(undoBtn);
+  toast.style.display = 'flex';
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => { toast.style.display = 'none'; }, 6000);
 }
 
 async function restoreSession(){
@@ -1229,9 +1292,31 @@ function sanitizeFilename(str){
     .trim();
 }
 
+// Deletes immediately (no confirm dialog, keeps single-image delete a
+// one-click action) but keeps the removed item around for a few seconds so
+// an accidental click can be undone via the toast, instead of forcing a
+// confirm popup on every delete.
+let _lastDeletedItem = null;
+let _lastDeletedTimer = null;
 function removeItem(id){
-  items = items.filter(i => i.id !== id);
+  const idx = items.findIndex(i => i.id === id);
+  if (idx === -1) return;
+  const [removed] = items.splice(idx, 1);
   removeItemFromDB(id);
+  render();
+
+  _lastDeletedItem = { item: removed, index: idx };
+  clearTimeout(_lastDeletedTimer);
+  _lastDeletedTimer = setTimeout(() => { _lastDeletedItem = null; }, 6000);
+  showUndoToast(`Removed ${removed.originalName || 'image'}.`, undoRemoveItem);
+}
+function undoRemoveItem(){
+  if (!_lastDeletedItem) return;
+  const { item, index } = _lastDeletedItem;
+  items.splice(Math.min(index, items.length), 0, item);
+  persistItem(item);
+  _lastDeletedItem = null;
+  clearTimeout(_lastDeletedTimer);
   render();
 }
 
@@ -1241,16 +1326,63 @@ function toggleCropPanel(id){
   render();
 }
 
-function setFocalPoint(event, id){
+// Focal-point picker: supports both a simple click-to-jump and a drag. On
+// mousedown/touchstart we move the crosshair right away (covers the plain
+// click case), then track movement until release. While dragging we only
+// move the crosshair directly in the DOM (cheap) instead of re-cropping on
+// every pixel; the actual re-crop only runs once, on release.
+let _dragFocalId = null;
+function updateFocalFromClientPoint(clientX, clientY, id){
   const item = items.find(i => i.id === id);
-  if (!item) return;
-  const rect = event.currentTarget.getBoundingClientRect();
-  const xPct = ((event.clientX - rect.left) / rect.width) * 100;
-  const yPct = ((event.clientY - rect.top) / rect.height) * 100;
+  const wrapEl = document.getElementById('cropwrap-' + id);
+  if (!item || !wrapEl) return;
+  const rect = wrapEl.getBoundingClientRect();
+  const xPct = ((clientX - rect.left) / rect.width) * 100;
+  const yPct = ((clientY - rect.top) / rect.height) * 100;
   item.focalX = Math.max(0, Math.min(100, xPct));
   item.focalY = Math.max(0, Math.min(100, yPct));
-  recropItem(item);
-  render();
+  const crosshair = wrapEl.querySelector('.crop-crosshair');
+  if (crosshair){
+    crosshair.style.left = item.focalX + '%';
+    crosshair.style.top = item.focalY + '%';
+  }
+}
+function startFocalDrag(event, id){
+  if (typeof event.button === 'number' && event.button !== 0) return; // left-click only
+  updateFocalFromClientPoint(event.clientX, event.clientY, id);
+  _dragFocalId = id;
+  document.addEventListener('mousemove', onFocalDragMove);
+  document.addEventListener('mouseup', onFocalDragEnd);
+}
+function startFocalDragTouch(event, id){
+  event.preventDefault();
+  const t = event.touches[0];
+  if (!t) return;
+  updateFocalFromClientPoint(t.clientX, t.clientY, id);
+  _dragFocalId = id;
+  document.addEventListener('touchmove', onFocalDragMoveTouch, { passive: false });
+  document.addEventListener('touchend', onFocalDragEnd);
+}
+function onFocalDragMove(event){
+  if (!_dragFocalId) return;
+  updateFocalFromClientPoint(event.clientX, event.clientY, _dragFocalId);
+}
+function onFocalDragMoveTouch(event){
+  if (!_dragFocalId) return;
+  event.preventDefault();
+  const t = event.touches[0];
+  if (t) updateFocalFromClientPoint(t.clientX, t.clientY, _dragFocalId);
+}
+function onFocalDragEnd(){
+  const id = _dragFocalId;
+  _dragFocalId = null;
+  document.removeEventListener('mousemove', onFocalDragMove);
+  document.removeEventListener('mouseup', onFocalDragEnd);
+  document.removeEventListener('touchmove', onFocalDragMoveTouch);
+  document.removeEventListener('touchend', onFocalDragEnd);
+  if (!id) return;
+  const item = items.find(i => i.id === id);
+  if (item) recropItem(item);
 }
 
 async function generateSlug(id){
@@ -1590,6 +1722,14 @@ function refreshCustomSizeUI(){
   document.getElementById('customSizeLabel').textContent = cs.enabled ? 'On' : 'Off';
   document.getElementById('customW').value = cs.w;
   document.getElementById('customH').value = cs.h;
+  // Keep this row collapsed behind the link by default so new users aren't
+  // shown a setting they'll never touch — but if a returning user already
+  // turned it on, show it expanded so their choice stays visible.
+  if (cs.enabled) toggleExtraSizeSettings();
+}
+function toggleExtraSizeSettings(){
+  document.getElementById('extraSizeFields').style.display = 'flex';
+  document.getElementById('extraSizeToggleLink').style.display = 'none';
 }
 function onCustomSizeToggle(checked){
   setCustomSize({ enabled: checked });
@@ -1680,6 +1820,78 @@ function openReviewModal(){
 function closeReviewModal(){
   document.getElementById('reviewModal').classList.remove('open');
   if (_lastFocusedBeforeModal){ _lastFocusedBeforeModal.focus(); _lastFocusedBeforeModal = null; }
+}
+
+// ---- Bulk paste: fill many description/link fields at once, one line per
+// image in upload order. A live match preview is shown before anything is
+// applied, since matching-by-order can silently go wrong if the pasted list
+// isn't in the same order as the uploaded images. ----
+function openBulkPasteModal(){
+  if (!items.length){ showToast('Upload some images first.'); return; }
+  _lastFocusedBeforeModal = document.activeElement;
+  const input = document.getElementById('bulkPasteInput');
+  input.value = '';
+  document.getElementById('bulkPastePreviewWrap').style.display = 'none';
+  document.getElementById('bulkPasteApplyBtn').disabled = true;
+  document.getElementById('bulkPasteModal').classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+function closeBulkPasteModal(){
+  document.getElementById('bulkPasteModal').classList.remove('open');
+  if (_lastFocusedBeforeModal){ _lastFocusedBeforeModal.focus(); _lastFocusedBeforeModal = null; }
+}
+function updateBulkPastePreview(){
+  const raw = document.getElementById('bulkPasteInput').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const wrap = document.getElementById('bulkPastePreviewWrap');
+  const table = document.getElementById('bulkPastePreviewTable');
+  const applyBtn = document.getElementById('bulkPasteApplyBtn');
+
+  if (!lines.length){
+    wrap.style.display = 'none';
+    applyBtn.disabled = true;
+    return;
+  }
+
+  const rows = items.map((item, idx) => {
+    const line = lines[idx];
+    return `<tr>
+      <td>${item.thumbDataUrl ? `<img class="rt-thumb" src="${item.thumbDataUrl}" alt="Thumbnail of ${escapeHtml(item.originalName)}">` : escapeHtml(item.originalName)}</td>
+      <td class="rt-alt">${line ? escapeHtml(line) : '<em>no line, left unchanged</em>'}</td>
+    </tr>`;
+  }).join('');
+  table.innerHTML = `<thead><tr><th>Image</th><th>Will be set to</th></tr></thead><tbody>${rows}</tbody>`;
+
+  const extra = lines.length - items.length;
+  let note = document.getElementById('bulkPasteExtraNote');
+  if (!note){
+    note = document.createElement('p');
+    note.id = 'bulkPasteExtraNote';
+    note.style.cssText = 'margin:8px 0 0;color:var(--text-dim);font-size:11.5px;';
+    wrap.appendChild(note);
+  }
+  note.textContent = extra > 0 ? `${extra} extra line${extra === 1 ? '' : 's'} won't be used, no matching image.` : '';
+
+  wrap.style.display = 'block';
+  applyBtn.disabled = false;
+}
+function applyBulkPaste(){
+  const raw = document.getElementById('bulkPasteInput').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return;
+  let applied = 0;
+  items.forEach((item, idx) => {
+    const line = lines[idx];
+    if (line){
+      item.inputText = line;
+      item.sourceType = detectSourceType(line);
+      persistItem(item);
+      applied++;
+    }
+  });
+  closeBulkPasteModal();
+  render();
+  showToast(`Filled in ${applied} image${applied === 1 ? '' : 's'}. Click Generate All Names when you're ready.`);
 }
 
 function openZipModal(){
@@ -1817,17 +2029,17 @@ function render(){
         ` : ''}
         ${item.cropOpen && item.previewDataUrl ? `
         <div class="crop-panel">
-          <div class="crop-preview-wrap" onclick="setFocalPoint(event, '${item.id}')" role="button" tabindex="0" aria-label="Click to set focal point for cropping">
+          <div class="crop-preview-wrap" id="cropwrap-${item.id}" onmousedown="startFocalDrag(event, '${item.id}')" ontouchstart="startFocalDragTouch(event, '${item.id}')" role="button" tabindex="0" aria-label="Click or drag to set the focal point for cropping">
             <img src="${item.previewDataUrl}" class="crop-preview-img" draggable="false" alt="Uncropped preview of ${escapeHtml(item.originalName)}">
             <div class="crop-crosshair" style="left:${item.focalX}%;top:${item.focalY}%;"></div>
           </div>
-          <div class="crop-hint">Click on the image above to set the focal point that stays in frame when cropped.</div>
+          <div class="crop-hint">Click or drag on the image above to set the focal point that stays in frame when cropped.</div>
           <button class="crop-done-btn" onclick="toggleCropPanel('${item.id}')">Done adjusting crop</button>
         </div>` : ''}
 
         <div class="auto-badge" id="badge-${item.id}">${item.sourceType === 'url' ? '🔗 Link Image (auto-detected)' : '📝 Description (auto-detected)'}</div>
 
-        <textarea id="desc-${item.id}" aria-label="Image description or URL" placeholder="${placeholder}" oninput="updateInputText('${item.id}', this.value)" onblur="render(); persistItem(items.find(i=>i.id==='${item.id}'))">${escapeHtml(item.inputText)}</textarea>
+        <textarea id="desc-${item.id}" aria-label="Image description or URL" placeholder="${placeholder}" oninput="updateInputText('${item.id}', this.value)" onblur="render(); persistItem(items.find(i=>i.id==='${item.id}'))" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generateSlug('${item.id}');}">${escapeHtml(item.inputText)}</textarea>
 
         <div class="gen-row">
           <button class="gen-btn" ${isGenerating?'disabled':''} onclick="generateSlug('${item.id}')">
@@ -1857,7 +2069,7 @@ function render(){
         <div class="meta-row">
           <div class="status">${statusDot(item)} ${
             item.status === 'error' ? item.errorMsg :
-            item.status === 'processing' ? 'Resizing 1536×700…' :
+            item.status === 'processing' ? `Resizing ${item.targetW}×${item.targetH}…` :
             item.status === 'generating' ? (item.errorMsg || 'Calling AI…') :
             item.slug ? 'Ready to download' : 'No filename yet'
           }</div>
