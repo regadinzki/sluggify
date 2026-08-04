@@ -161,10 +161,19 @@
     background-position:center;background-size:2px 100%;background-repeat:no-repeat;
   }
 
-  .thumb-col{width:190px;flex-shrink:0;background:#0E0F12;display:flex;align-items:center;justify-content:center;position:relative;}
+  /* Height follows the real output aspect ratio (set inline per-card via
+     aspect-ratio) instead of a fixed landscape strip, so the preview shape
+     actually matches what gets downloaded. Clamped so an extreme custom
+     ratio can't blow up the layout. */
+  .thumb-col{width:190px;flex-shrink:0;background:#0E0F12;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:70px;max-height:260px;}
   .thumb-col[role=button]{cursor:pointer;}
   .thumb-col[role=button]:focus-visible{outline:2px solid var(--accent-dim);outline-offset:-2px;}
-  .thumb-col canvas{width:100%;height:108px;object-fit:cover;display:block;}
+  .thumb-col canvas{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb-col .size-tag{
+    position:absolute;top:6px;left:6px;background:rgba(0,0,0,.55);
+    color:var(--text-dim);font-family:'Geist Mono',monospace;font-size:9.5px;
+    padding:2px 6px;border-radius:5px;
+  }
   .crop-hover-hint{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     background:rgba(10,9,8,.55);color:var(--accent);font-size:11px;font-weight:600;
@@ -360,8 +369,7 @@
     .settings{gap:10px;padding:10px 12px;}
     .card{flex-direction:column;}
     .tag-edge{display:none;}
-    .thumb-col{width:100%;height:160px;}
-    .thumb-col canvas{height:160px;}
+    .thumb-col{width:100%;}
     .sticky-actionbar{position:static;}
     .sticky-actionbar-buttons{width:100%;}
     .sticky-actionbar-buttons button{flex:1;justify-content:center;}
@@ -785,19 +793,32 @@ function refreshApiKeyBar(){
     document.getElementById('forgetKeyBtn').style.display = 'none';
   }
 
-  // Keep the provider choice visible if Anthropic is already the active
-  // provider (a returning user made that choice on purpose); otherwise keep
-  // it collapsed behind the link so first-time visitors only ever see one
-  // simple, free option by default.
-  if (provider === 'anthropic'){
-    document.getElementById('providerToggle').style.display = 'flex';
-    document.getElementById('providerSwitchLink').style.display = 'none';
-  }
+  refreshProviderToggleVisibility();
 }
 
+// Keep the provider choice visible with no way to collapse it while
+// Anthropic is the active provider (a returning user made that choice on
+// purpose, and hiding it would make it unclear which provider is in use).
+// Otherwise it's a real two-way toggle behind the link, so opening it by
+// mistake doesn't leave it stuck open until reload.
+function refreshProviderToggleVisibility(){
+  const provider = getActiveProvider();
+  const toggle = document.getElementById('providerToggle');
+  const link = document.getElementById('providerSwitchLink');
+  if (provider === 'anthropic'){
+    toggle.style.display = 'flex';
+    link.style.display = 'none';
+    return;
+  }
+  link.style.display = '';
+  const isOpen = toggle.style.display === 'flex';
+  link.textContent = isOpen ? 'Hide provider options' : 'Using a different AI provider?';
+}
 function toggleProviderChoice(){
-  document.getElementById('providerToggle').style.display = 'flex';
-  document.getElementById('providerSwitchLink').style.display = 'none';
+  const toggle = document.getElementById('providerToggle');
+  const isOpen = toggle.style.display === 'flex';
+  toggle.style.display = isOpen ? 'none' : 'flex';
+  refreshProviderToggleVisibility();
 }
 
 function forgetApiKey(){
@@ -1725,11 +1746,17 @@ function refreshCustomSizeUI(){
   // Keep this row collapsed behind the link by default so new users aren't
   // shown a setting they'll never touch — but if a returning user already
   // turned it on, show it expanded so their choice stays visible.
-  if (cs.enabled) toggleExtraSizeSettings();
+  if (cs.enabled) setExtraSizeVisible(true);
+}
+// A real two-way toggle (not a one-way reveal) — clicking the link again
+// collapses the row back, instead of leaving it stuck open until reload.
+function setExtraSizeVisible(open){
+  document.getElementById('extraSizeFields').style.display = open ? 'flex' : 'none';
+  document.getElementById('extraSizeToggleLink').textContent = open ? '− Hide extra size' : '+ Add a second export size';
 }
 function toggleExtraSizeSettings(){
-  document.getElementById('extraSizeFields').style.display = 'flex';
-  document.getElementById('extraSizeToggleLink').style.display = 'none';
+  const isOpen = document.getElementById('extraSizeFields').style.display === 'flex';
+  setExtraSizeVisible(!isOpen);
 }
 function onCustomSizeToggle(checked){
   setCustomSize({ enabled: checked });
@@ -2011,11 +2038,12 @@ function render(){
     return `
     <div class="card">
       <div class="tag-edge"></div>
-      <div class="thumb-col"${item.previewDataUrl ? ` onclick="toggleCropPanel('${item.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCropPanel('${item.id}');}" role="button" tabindex="0" aria-expanded="${item.cropOpen ? 'true' : 'false'}" aria-label="${item.cropOpen ? 'Close crop adjuster' : 'Click to adjust crop'}"` : ''}>
+      <div class="thumb-col" style="aspect-ratio:${item.targetW} / ${item.targetH};"${item.previewDataUrl ? ` onclick="toggleCropPanel('${item.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCropPanel('${item.id}');}" role="button" tabindex="0" aria-expanded="${item.cropOpen ? 'true' : 'false'}" aria-label="${item.cropOpen ? 'Close crop adjuster' : 'Click to adjust crop'}"` : ''}>
         ${item.thumbDataUrl
-          ? `<canvas style="width:100%;height:108px;background-image:url('${item.thumbDataUrl}');background-size:cover;background-position:center;"></canvas>`
+          ? `<canvas style="width:100%;height:100%;background-image:url('${item.thumbDataUrl}');background-size:cover;background-position:center;"></canvas>`
           : `<span class="empty">processing…</span>`}
         ${item.previewDataUrl ? `<span class="crop-hover-hint">${item.cropOpen ? '✕ Close' : '🎯 Click to adjust crop'}</span>` : ''}
+        <span class="size-tag">${item.targetW}×${item.targetH}</span>
         ${item.processedSize ? `<span class="dim-tag">${sizeKb}</span>` : ''}
       </div>
       <div class="body-col">
