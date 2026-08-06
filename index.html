@@ -1466,11 +1466,12 @@ STRICT RULES FOR THE SLUG:
 - Ideal length is 4-8 words — concise but still descriptive and meaningful for SEO.
 - Don't include the file extension, size, resolution, date/year, or internal codes (e.g. LR, HR, short property codes) unless they're a meaningful part of the place name.
 - If the input is a URL (not a sentence description): pull the meaningful place/property name from the URL's folder path (usually already readable), then split any camelCase or abbreviations in the filename (e.g. "StudioExe" -> "studio-executive", "TvLounge" -> "tv-lounge") and combine everything into one slug describing the property + the room/feature shown. Drop redundant codes already represented by the full name (e.g. an initialism like "SCC" when the full name is already present), and drop resolution/year tags (2024, LR, HR, etc).
+- Language: if the input description is written in a language other than English (e.g. Indonesian, Spanish, French) AND that language uses standard Latin letters, write the slug in that same language too (still lowercase, hyphenated, a-z 0-9 and - only — drop accents/diacritics to their closest plain letter, e.g. "é" -> "e"). If the input uses a non-Latin script (e.g. Arabic, Chinese, Thai), translate the slug into English instead, since the slug must stay URL-safe. URLs (not sentence descriptions) always follow the rule above regardless of the client site's language.
 
 RULES FOR THE ALT TEXT:
-- Plain English, under 125 characters, natural sentence-like phrase (not just repeating the slug with hyphens).
+- Write the alt text in the SAME language as the input description (Indonesian input -> Indonesian alt text, English input -> English alt text, etc). Keep it under 125 characters, a natural sentence-like phrase (not just repeating the slug with hyphens).
 - Describe what's actually in the image — don't start with "Image of" or "Photo of" (redundant for screen readers).
-- If the input is a URL with limited context, base the alt text on the property/room name inferred from the URL.
+- If the input is a URL with limited context, base the alt text on the property/room name inferred from the URL, in English.
 
 EXAMPLE 1 (stock photo description):
 Input: "rear view of two asian corporate executives discussing business while walking in street in downtown of modern city"
@@ -1478,7 +1479,11 @@ Output: {"slug":"asian-business-executives-walking-downtown","alt_text":"Two Asi
 
 EXAMPLE 2 (client website URL):
 Input: "https://www.discoverasr.com/content/dam/tal/media/images/properties/vietnam/ho-chi-minh-city/somerset-chancellor-court-ho-chi-minh-city/gallery/VN-Ho%20Chi%20Minh%20City-SCC-StudioExe-TvLounge-2024-LR.jpg"
-Output: {"slug":"somerset-chancellor-court-ho-chi-minh-city-studio-executive-tv-lounge","alt_text":"Studio Executive TV lounge at Somerset Chancellor Court, Ho Chi Minh City"}`;
+Output: {"slug":"somerset-chancellor-court-ho-chi-minh-city-studio-executive-tv-lounge","alt_text":"Studio Executive TV lounge at Somerset Chancellor Court, Ho Chi Minh City"}
+
+EXAMPLE 3 (non-English description, Indonesian):
+Input: "Seorang ibu dan putrinya yang berasal dari Asia menikmati penggunaan internet melalui ponsel pintar di rumah."
+Output: {"slug":"ibu-dan-anak-menggunakan-smartphone-di-rumah","alt_text":"Seorang ibu dan anak perempuan sedang menggunakan smartphone bersama di rumah"}`;
 
 function sleep(ms){
   return new Promise(resolve => setTimeout(resolve, ms));
